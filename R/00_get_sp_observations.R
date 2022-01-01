@@ -15,18 +15,30 @@ NZ_grid <- st_read("data/NZ_grid.shp")
 
 # list of interactions with names of taxa
 int.list <- read.csv("../datasets/plant-bird interactions and traits/plant_bird_interactions.csv")
-sp.list <- unique(c(sp.list$PLANTSPECIES,sp.list$BIRDSPECIES))
+sp.list <- unique(c(int.list$PLANTSPECIES,int.list$BIRDSPECIES))
 
 sp.list <- str_replace(sp.list,"_"," ")
-# TODO: remove "sp" from taxa at the genus level
+
+# taxa identified at the genus level often have other species of the same genus
+# with observations (e.g. there are "Pseudopanax sp" and "Pseudopanax arboreus", etc)
+# so it is not feasible to simply dump together all species in the "sp" observations.
+# For now, remove them.
+genus <- grep(" sp",sp.list)
+sp.list <- sp.list[-genus]
+
+# simplify subspecies/varieties
+sp.list <- sort(unique(gsub("\\_.*","",sp.list)))
 
 # -------------------------------------------------------------------------
 # gather observations from every species
-for(i.sp in 1:length(sp.list)){
+for(i.sp in 5:length(sp.list)){
+  
+  print(paste(Sys.time(),"- downloading data from sp:",sp.list[i.sp]))
   
   #obtain data from GBIF via rgbif
+  # TODO: update limit for the real thing
   dat <- occ_search(scientificName = sp.list[i.sp], 
-                    limit = 500, # hard limit is 100k
+                    limit = 10000, # hard limit is 100k
                     country = "NZ", 
                     hasCoordinate = T)
   
@@ -34,11 +46,20 @@ for(i.sp in 1:length(sp.list)){
   if(!is.null(dat$data)){
     
     #select columns of interest
+    # weird behaviour in which sometimes columns differ among species
+    if("coordinateUncertaintyInMeters" %in% names(dat$data)){
+
     dat <- dat$data %>%
       dplyr::select(species, decimalLongitude, decimalLatitude, countryCode,
                     gbifID,
                     coordinateUncertaintyInMeters, year,
-                    basisOfRecord, institutionCode, datasetName)
+                    basisOfRecord, institutionCode)
+    }else{
+      dat <- dat$data %>%
+        dplyr::select(species, decimalLongitude, decimalLatitude, countryCode,
+                      gbifID, year,
+                      basisOfRecord, institutionCode)
+    }
     # names(dat)
     
     # clean up records without coordinates
@@ -80,13 +101,15 @@ for(i.sp in 1:length(sp.list)){
     dat_cl <- dat[flags$.summary,]
     
     # uncertainty of spatial coordinates
-    hist(dat_cl$coordinateUncertaintyInMeters / 1000, breaks = 20)
+    # hist(dat_cl$coordinateUncertaintyInMeters / 1000, breaks = 20)
     
     # remove uncertain records
-    dat_cl <- dat_cl %>% 
-      dplyr::filter(coordinateUncertaintyInMeters / 1000 <= 100 | is.na(coordinateUncertaintyInMeters))
+    if("coordinateUncertaintyInMeters" %in% names(dat_cl)){
+      dat_cl <- dat_cl %>% 
+        dplyr::filter(coordinateUncertaintyInMeters / 1000 <= 100 | is.na(coordinateUncertaintyInMeters))
+    }    
     
-    # remove suspicious data sources - in this case all are ok
+    # remove suspicious data sources 
     # table(dat_cl$basisOfRecord)
     # dat_cl <- filter(dat_cl, basisOfRecord == "HUMAN_OBSERVATION")
     # dat_cl$year <- as.factor(dat_cl$year)
@@ -116,9 +139,10 @@ for(i.sp in 1:length(sp.list)){
     
     # -------------------------------------------------------------------------
     # write to disk
-    
+    my.sp <- str_replace(sp.list[i.sp]," ","_")
+  
     write.csv2(obs_id_df,paste("results/sp_observations/",
-                               sp.list[i.sp],
+                               my.sp,
                                ".csv",sep=""),row.names = FALSE)
     
   }# if !is.null
