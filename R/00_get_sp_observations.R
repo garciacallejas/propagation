@@ -31,16 +31,31 @@ sp.list <- sort(unique(gsub("\\_.*","",sp.list)))
 
 # -------------------------------------------------------------------------
 # gather observations from every species
-for(i.sp in 5:length(sp.list)){
+
+################### NOTE ######################
+# Some species do not return valid observations in occ_search
+# and I had to look for them manually, either using their taxonkey or name:
+# Androstoma empetrifolia
+# Dacrydium cupressinum (taxonkey 5286163)
+# Dysoxylum spectabile
+# Tropaelum speciosum
+# Neopanax colensoi (synonim Pseudopanax colensoi)
+# Cornus capitata (7161042)
+###############################################
+
+for(i.sp in 1:length(sp.list)){
   
   print(paste(Sys.time(),"- downloading data from sp:",sp.list[i.sp]))
   
   #obtain data from GBIF via rgbif
   # TODO: update limit for the real thing
-  dat <- occ_search(scientificName = sp.list[i.sp], 
-                    limit = 10000, # hard limit is 100k
-                    country = "NZ", 
-                    hasCoordinate = T)
+  dat <- occ_search(
+    # taxonKey = 7161042,
+    scientificName = sp.list[i.sp],
+    limit = 10000, # hard limit is 100k
+    country = "NZ",
+    hasCoordinate = T
+  )
   
   # names(dat$data) #a lot of columns
   if(!is.null(dat$data)){
