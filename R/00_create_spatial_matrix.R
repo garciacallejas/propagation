@@ -158,7 +158,7 @@ for(i.row in 1:length(cell.id)){
 # -------------------------------------------------------------------------
 # build the full block matrix, considering only cells with observations
 
-represented.cells <- cell.id[which(cell.id %in% unique(sp.obs$grid_id))]
+represented.cells <- cell.id[which(cell.id %in% unique(sp.obs.2$grid_id))]
 
 matrix.n.rows <- length(all.sp)*length(represented.cells)
 matrix.names <- rep(all.sp,length(represented.cells))
@@ -171,10 +171,15 @@ block.matrix <- matrix(0,
 # -------------------------------------------------------------------------
 # populate the block matrix
 # I need some auxiliary data structures to do it efficiently
+num.sp <- length(all.sp)
 
+# a metaweb adjacency matrix
 adjacency.matrix <- matrix(0,length(all.sp),length(all.sp),
                            dimnames = list(all.sp,all.sp))
+diag(adjacency.matrix) <- 1
 
+# -------------------------------------------------------------------------
+# a dataframe with observations of species (plant here, birds below) per cell
 for(i.obs in 1:nrow(clean.int.data)){
   adjacency.matrix[clean.int.data$PLANTSPECIES[i.obs],clean.int.data$BIRDSPECIES[i.obs]] <- 1
   adjacency.matrix[clean.int.data$BIRDSPECIES[i.obs],clean.int.data$PLANTSPECIES[i.obs]] <- 1
@@ -200,19 +205,92 @@ bird.sp.cells.wide <- pivot_wider(bird.sp.cells.2,
                                   names_from = grid_id,
                                   values_from = obs,
                                   values_fill = 0)
+
+# -------------------------------------------------------------------------
 # conditions for linking:
 # 1 - plant-bird interaction in the same cell
 
-# TODO should be easier
+# go through each cell (i.e. the diagonal of the block matrix)
+for(i.cell in 1:length(represented.cells)){
+  
+  # the template is the metaweb adjacency matrix, with all interactions marked
+  # so I need to "prune it" to keep only the interactions in each cell
+  my.adj.matrix <- adjacency.matrix
+  
+  # go through each position and check whether both sp appear in that cell
+  for(i.row in 1:nrow(my.adj.matrix)){
+    for(i.col in 1:ncol(my.adj.matrix)){
+      # only if they interact, of course
+      if(my.adj.matrix[i.row,i.col] == 1){
+        
+        # check row species
+        row.sp <- rownames(my.adj.matrix)[i.row]
+        # check col species
+        col.sp <- colnames(my.adj.matrix)[i.col]
+        
+        my.cell <- as.character(represented.cells[i.cell])
+        
+        # check presences in this cell
+        # check again consistency of cells - there is at least one cell (86)
+        # in which there are birds but no plants, and thus it is not recorded
+        # in plant.sp.cells.wide, so any plant in that cell should have obs = 0
+        if(row.sp %in% bird.sp){
+          my.row <- which(bird.sp.cells.wide$species == row.sp)
+          if(my.cell %in% names(bird.sp.cells.wide)){
+            row.sp.obs <- as.numeric(bird.sp.cells.wide[my.row,my.cell])
+          }else{
+            row.sp.obs <- 0
+          }
+        }else{
+          my.row <- which(plant.sp.cells.wide$species == row.sp)
+          if(my.cell %in% names(plant.sp.cells.wide)){
+            row.sp.obs <- as.numeric(plant.sp.cells.wide[my.row,my.cell])
+          }else{
+            row.sp.obs <- 0
+          }
+        }
+        
+        if(col.sp %in% bird.sp){
+          my.col <- which(bird.sp.cells.wide$species == col.sp)
+          if(my.cell %in% names(bird.sp.cells.wide)){
+            col.sp.obs <- as.numeric(bird.sp.cells.wide[my.col,my.cell])
+          }else{
+            col.sp.obs <- 0
+          }
+        }else{
+          my.col <- which(plant.sp.cells.wide$species == col.sp)
+          if(my.cell %in% names(plant.sp.cells.wide)){
+            col.sp.obs <- as.numeric(plant.sp.cells.wide[my.col,my.cell])
+          }else{
+            col.sp.obs <- 0
+          }
+        }
+        
+        # if any is missing, mark the matrix position as 0
+        if(row.sp.obs == 0 | col.sp.obs == 0){
+          my.adj.matrix[i.row,i.col] <- 0
+        }
+        
+      }# if matrix position == 1
+    }# for i.col
+  }# for i.row
+  
+  # overwrite this diagonal of the block matrix with the updated adjacency matrix
+  init.row <- 1 + (num.sp * (i.cell - 1))
+  init.col <- init.row
+  end.row <- num.sp + (num.sp * (i.cell - 1))
+  end.col <- end.row
+  
+  block.matrix[init.row:end.row,init.col:end.col] <- my.adj.matrix
+  
+}# for i.cell
 
 # 2 - only for birds: population of the same species in an adjacent cell
 # there are a lot of cells to check
 
-
 # go through each bird observation (bird.sp.cell.wide)
 # check adjacent cells (adjacent.cells.matrix) 
 # and mark (block.matrix) as linked the present cell and the adjacents
-num.sp <- length(all.sp)
 
 for(i.sp in 1:nrow(bird.sp.cells.wide)){
   for(i.obs in 2:ncol(bird.sp.cells.wide)){
@@ -244,5 +322,11 @@ for(i.sp in 1:nrow(bird.sp.cells.wide)){
 }# for each bird sp
 
 # -------------------------------------------------------------------------
-
+# save the block matrix to disk
 save(block.matrix,file = "results/community_block_matrix.Rdata")
+
+# and the clean interaction data
+write.csv2(clean.int.data,"data/plant_bird_clean_interaction_data.csv",row.names = F)
+write.csv2(bird.sp.cells.wide,"data/bird_cell_presences.csv",row.names = F)
+write.csv2(plant.sp.cells.wide,"data/plant_cell_presences.csv",row.names = F)
+
