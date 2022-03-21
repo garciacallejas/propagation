@@ -1,4 +1,17 @@
 
+# script to generate simulated landscapes from a Null Landscape Model,
+# according to a gradient in spatial autocorrelation
+
+# INPUTS
+# - number of columns and rows
+# - categories in the gradient
+# - replicates per category
+
+# OUTPUTS
+# - nested list: landscape.list[[category]][[replicate]]: "results/landscape_matrices.RData"
+
+# -------------------------------------------------------------------------
+
 library(tidyverse)
 
 # remotes::install_github("ropensci/NLMR")

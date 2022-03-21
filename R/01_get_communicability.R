@@ -3,7 +3,7 @@
 
 # INPUTS: 
 # - supra-adjacency matrix: "results/community_block_matrix.Rdata"
-# - interaction data: "data/plant_bird_clean_interaction_data.csv"
+# - optional - interaction data: "data/plant_bird_clean_interaction_data.csv"
 # - bird presences in cells: "data/bird_cell_presences.csv"
 # - plant presences in cells: "data/plant_cell_presences.csv"
 
@@ -30,7 +30,7 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 load("results/community_block_matrix.Rdata")
 
 # these are for building the list of interactions
-clean.int.data <- read.csv2("data/plant_bird_clean_interaction_data.csv")
+# clean.int.data <- read.csv2("data/plant_bird_clean_interaction_data.csv")
 bird.sp.cells.wide <- read.csv2("data/bird_cell_presences.csv")
 plant.sp.cells.wide <- read.csv2("data/plant_cell_presences.csv")
 
