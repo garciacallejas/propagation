@@ -34,3 +34,21 @@ grid_lab <- st_centroid(grid_1_land) %>% cbind(st_coordinates(.))
 
 st_write(grid_lab,"data/NZ_grid_labs.csv")
 st_write(grid_1_land,"data/NZ_grid.shp")
+
+# -------------------------------------------------------------------------
+# select a small set of cells for testing
+
+# my.cells <- c(45,46)
+# 
+# grid.subset <- subset(grid_1_land, grid_id %in% my.cells)
+# 
+# # ggplot() +
+# #   geom_sf(data = grid.subset, fill = 'transparent', lwd = 0.3) +
+# #   coord_sf(datum = NA)
+# 
+# st_write(grid.subset,"data/NZ_grid_2cells.shp")
+
+
+
+
+
