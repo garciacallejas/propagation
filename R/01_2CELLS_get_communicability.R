@@ -1,38 +1,26 @@
 
-# Script to obtain communicability matrix from interactions
-
-# INPUTS: 
-# - supra-adjacency matrix: "results/community_block_matrix.Rdata"
-# - interaction data: "data/plant_bird_clean_interaction_data.csv"
-# - bird presences in cells: "data/bird_cell_presences.csv"
-# - plant presences in cells: "data/plant_cell_presences.csv"
-
-# OUTPUTS:
-# - binary communicability matrix: "{external_path}/results/binary_communicability_matrix.Rdata"
-# - weighted communicability matrix: "{external_path}/results/weighted_communicability_matrix.Rdata"
-# - pairwise communicability dataframe: "{external_path}/results/communicability_pairwise.Rdata"
-
-# NOTE:
-# these outputs are too big for git/github. Save them externally and keep 
-# the path {external_path} always the same
-
-external_path <- "/home/david/Work/datasets/NZ/"
-
-# -------------------------------------------------------------------------
+# communicability_ij = exp(A)ij
 
 library(data.table)
 # library(tidyverse)
 library(expm) # for matrix exponentiation
 # library(igraph)
+library(sf)
+
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # -------------------------------------------------------------------------
-load("results/community_block_matrix.Rdata")
+NZ.grid <- st_read("data/NZ_grid_2cells.shp")
+
+represented.cells <- sort(unique(NZ.grid$grid_id))
+
+# -------------------------------------------------------------------------
+load("results/community_block_matrix_2CELLS.Rdata")
 
 # these are for building the list of interactions
-clean.int.data <- read.csv2("data/plant_bird_clean_interaction_data.csv")
-bird.sp.cells.wide <- read.csv2("data/bird_cell_presences.csv")
-plant.sp.cells.wide <- read.csv2("data/plant_cell_presences.csv")
+clean.int.data <- read.csv2("data/plant_bird_clean_interaction_data_2CELLS.csv")
+bird.sp.cells.wide <- read.csv2("data/bird_cell_presences_2CELLS.csv")
+plant.sp.cells.wide <- read.csv2("data/plant_cell_presences_2CELLS.csv")
 
 # clean.int.data and bird/plant.sp.cells.wide should be consistent, CHECK
 # all.sp <- sort(unique(c(clean.int.data$PLANTSPECIES,clean.int.data$BIRDSPECIES)))
@@ -41,10 +29,10 @@ plant.sp <- sort(unique(plant.sp.cells.wide$species))
 all.sp <- sort(unique(c(bird.sp,plant.sp)))
 num.sp <- length(all.sp)
 
-represented.cells <- unique(c(names(bird.sp.cells.wide),names(plant.sp.cells.wide)))
-represented.cells <- as.numeric(substr(represented.cells[-1],
-                                       start = 2,
-                                       stop = nchar(represented.cells[-1])))
+# represented.cells <- unique(c(names(bird.sp.cells.wide),names(plant.sp.cells.wide)))
+# represented.cells <- as.numeric(substr(represented.cells[-1],
+#                                        start = 2,
+#                                        stop = nchar(represented.cells[-1])))
 # -------------------------------------------------------------------------
 
 # is my matrix binary?
@@ -61,24 +49,12 @@ if(is.binary){
   # TODO consider weighting these elements by community size
 
   # weighted
-  
   scaled.comm.matrix <- range01(block.matrix)
   weighted.comm.matrix <- expm(scaled.comm.matrix)
-  
-  # abs.int.matrix <- abs(block.matrix)
-  # degree.diag.matrix <- matrix(0,nrow = nrow(binary.matrix),
-  #                              ncol = ncol(binary.matrix))
-  # diag(degree.diag.matrix) <- rowSums(abs.int.matrix) # strength - suma de los pesos
-  # 
-  # d.inverse <- solve(degree.diag.matrix)
-  # d.pow <- sqrt(d.inverse)
-  # 
-  # multiplied.matrix <- d.pow %*% abs.int.matrix %*% d.pow # eq. 2.2 of Crofts and Higham 2009
-  # weighted.comm.matrix <- expm(multiplied.matrix)
 }
 
-save(binary.comm.matrix,file = paste(external_path,"results/binary_communicability_matrix.Rdata"),sep="")
-save(weighted.comm.matrix,file = paste(external_path,"results/weighted_communicability_matrix.Rdata"),sep="")
+save(binary.comm.matrix,file = "results/binary_communicability_matrix_2CELLS.Rdata")
+save(weighted.comm.matrix,file = "results/weighted_communicability_matrix_2CELLS.Rdata")
 
 rm(block.matrix)
 gc(verbose = F)
@@ -119,5 +95,5 @@ if(!is.binary){
 # -------------------------------------------------------------------------
 
 # it is unfeasible to save a csv file of this size
-save(df1,file = paste(external_path,"results/communicability_pairwise.Rdata",sep=""))
-# write_csv2(df1,"results/communicability_pairwise.csv")
+save(df1,file = "results/communicability_pairwise_2CELLS.Rdata")
+# write_csv2(df1,"results/communicability_pairwise_2CELLS.csv")

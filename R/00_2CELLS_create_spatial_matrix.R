@@ -83,7 +83,7 @@ sp.files <- list.files(path = "results/sp_observations",
 sp.obs <- sp.files %>% map_dfr(read_csv2)
 sp.obs <- subset(sp.obs, !is.na(year))
 
-NZ.grid <- st_read("data/NZ_grid.shp")
+NZ.grid <- st_read("data/NZ_grid_2cells.shp")
 
 # taken directly from the grid. It may be the case that there are cells
 # without observations, i.e. not represented in sp.obs
@@ -96,7 +96,12 @@ cell.id <- sort(unique(NZ.grid$grid_id))
 # min(sp.obs$year,na.rm = T)
 
 min.year <- 2010
-sp.obs.2 <- subset(sp.obs, year >= min.year)
+
+# duplicated, but for name consistency
+represented.cells <- cell.id
+
+# THIS IS A TEST FOR ONLY 2 CELLS
+sp.obs.2 <- subset(sp.obs, year >= min.year & grid_id %in% represented.cells)
 
 # assume that bird populations from adjacent cells are linked
 # in next iterations, this can be improved by accounting for differences in dispersal ability
@@ -156,12 +161,44 @@ for(i.row in 1:length(cell.id)){
 }
 
 # -------------------------------------------------------------------------
+# a dataframe with observations of species (plant here, birds below) per cell
+
+plant.sp.cells <- subset(sp.obs.2,species %in% plant.sp)
+plant.sp.cells <- plant.sp.cells[,c("grid_id","species")]
+
+plant.sp.cells.2 <- plant.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
+
+# only in the small set of cells for this example
+plant.sp.cells.subset <- subset(plant.sp.cells.2,grid_id %in% represented.cells)
+
+plant.sp.cells.wide.subset <- pivot_wider(plant.sp.cells.subset,
+                                          names_from = grid_id,
+                                          values_from = obs,
+                                          values_fill = 0)
+
+# -------------------------------------------------------------------------
+bird.sp.cells <- subset(sp.obs.2,species %in% bird.sp)
+bird.sp.cells <- bird.sp.cells[,c("grid_id","species")]
+
+bird.sp.cells.2 <- bird.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
+
+# only in the small set of cells for this example
+bird.sp.cells.subset <- subset(bird.sp.cells.2,grid_id %in% represented.cells)
+
+bird.sp.cells.wide.subset <- pivot_wider(bird.sp.cells.subset,
+                                         names_from = grid_id,
+                                         values_from = obs,
+                                         values_fill = 0)
+
+# now, species selected are only those that appear in the two cells
+all.sp.subset <- c(unique(bird.sp.cells.wide.subset$species),
+             unique(plant.sp.cells.wide.subset$species))
+
+# -------------------------------------------------------------------------
 # build the full block matrix, considering only cells with observations
 
-represented.cells <- cell.id[which(cell.id %in% unique(sp.obs.2$grid_id))]
-
-matrix.n.rows <- length(all.sp)*length(represented.cells)
-df.names <- expand.grid(all.sp,represented.cells)
+matrix.n.rows <- length(all.sp.subset)*length(represented.cells)
+df.names <- expand.grid(all.sp.subset,represented.cells)
 matrix.names <- paste(df.names[,1],df.names[,2],sep="-")
 
 block.matrix <- matrix(0,
@@ -172,40 +209,17 @@ block.matrix <- matrix(0,
 # -------------------------------------------------------------------------
 # populate the block matrix
 # I need some auxiliary data structures to do it efficiently
-num.sp <- length(all.sp)
+num.sp <- length(all.sp.subset)
 
 # a metaweb adjacency matrix
-adjacency.matrix <- matrix(0,length(all.sp),length(all.sp),
-                           dimnames = list(all.sp,all.sp))
+adjacency.matrix <- matrix(0,length(all.sp.subset),length(all.sp.subset),
+                           dimnames = list(all.sp.subset,all.sp.subset))
 diag(adjacency.matrix) <- 1
 
-# -------------------------------------------------------------------------
-# a dataframe with observations of species (plant here, birds below) per cell
 for(i.obs in 1:nrow(clean.int.data)){
   adjacency.matrix[clean.int.data$PLANTSPECIES[i.obs],clean.int.data$BIRDSPECIES[i.obs]] <- 1
   adjacency.matrix[clean.int.data$BIRDSPECIES[i.obs],clean.int.data$PLANTSPECIES[i.obs]] <- 1
 }# for i.obs
-
-plant.sp.cells <- subset(sp.obs.2,species %in% plant.sp)
-plant.sp.cells <- plant.sp.cells[,c("grid_id","species")]
-
-plant.sp.cells.2 <- plant.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
-
-plant.sp.cells.wide <- pivot_wider(plant.sp.cells.2,
-                                  names_from = grid_id,
-                                  values_from = obs,
-                                  values_fill = 0)
-
-# -------------------------------------------------------------------------
-bird.sp.cells <- subset(sp.obs.2,species %in% bird.sp)
-bird.sp.cells <- bird.sp.cells[,c("grid_id","species")]
-
-bird.sp.cells.2 <- bird.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
-
-bird.sp.cells.wide <- pivot_wider(bird.sp.cells.2,
-                                  names_from = grid_id,
-                                  values_from = obs,
-                                  values_fill = 0)
 
 # -------------------------------------------------------------------------
 # conditions for linking:
@@ -236,32 +250,32 @@ for(i.cell in 1:length(represented.cells)){
         # in which there are birds but no plants, and thus it is not recorded
         # in plant.sp.cells.wide, so any plant in that cell should have obs = 0
         if(row.sp %in% bird.sp){
-          my.row <- which(bird.sp.cells.wide$species == row.sp)
-          if(my.cell %in% names(bird.sp.cells.wide)){
-            row.sp.obs <- as.numeric(bird.sp.cells.wide[my.row,my.cell])
+          my.row <- which(bird.sp.cells.wide.subset$species == row.sp)
+          if(my.cell %in% names(bird.sp.cells.wide.subset)){
+            row.sp.obs <- as.numeric(bird.sp.cells.wide.subset[my.row,my.cell])
           }else{
             row.sp.obs <- 0
           }
         }else{
-          my.row <- which(plant.sp.cells.wide$species == row.sp)
-          if(my.cell %in% names(plant.sp.cells.wide)){
-            row.sp.obs <- as.numeric(plant.sp.cells.wide[my.row,my.cell])
+          my.row <- which(plant.sp.cells.wide.subset$species == row.sp)
+          if(my.cell %in% names(plant.sp.cells.wide.subset)){
+            row.sp.obs <- as.numeric(plant.sp.cells.wide.subset[my.row,my.cell])
           }else{
             row.sp.obs <- 0
           }
         }
         
         if(col.sp %in% bird.sp){
-          my.col <- which(bird.sp.cells.wide$species == col.sp)
-          if(my.cell %in% names(bird.sp.cells.wide)){
-            col.sp.obs <- as.numeric(bird.sp.cells.wide[my.col,my.cell])
+          my.col <- which(bird.sp.cells.wide.subset$species == col.sp)
+          if(my.cell %in% names(bird.sp.cells.wide.subset)){
+            col.sp.obs <- as.numeric(bird.sp.cells.wide.subset[my.col,my.cell])
           }else{
             col.sp.obs <- 0
           }
         }else{
-          my.col <- which(plant.sp.cells.wide$species == col.sp)
-          if(my.cell %in% names(plant.sp.cells.wide)){
-            col.sp.obs <- as.numeric(plant.sp.cells.wide[my.col,my.cell])
+          my.col <- which(plant.sp.cells.wide.subset$species == col.sp)
+          if(my.cell %in% names(plant.sp.cells.wide.subset)){
+            col.sp.obs <- as.numeric(plant.sp.cells.wide.subset[my.col,my.cell])
           }else{
             col.sp.obs <- 0
           }
@@ -293,19 +307,19 @@ for(i.cell in 1:length(represented.cells)){
 # check adjacent cells (adjacent.cells.matrix) 
 # and mark (block.matrix) as linked the present cell and the adjacents
 
-for(i.sp in 1:nrow(bird.sp.cells.wide)){
-  for(i.obs in 2:ncol(bird.sp.cells.wide)){
-    if(bird.sp.cells.wide[i.sp,i.obs]>0){
+for(i.sp in 1:nrow(bird.sp.cells.wide.subset)){
+  for(i.obs in 2:ncol(bird.sp.cells.wide.subset)){
+    if(bird.sp.cells.wide.subset[i.sp,i.obs]>0){
       
       # this is the cell id
-      my.cell.id <- as.numeric(names(bird.sp.cells.wide)[i.obs])
+      my.cell.id <- as.numeric(names(bird.sp.cells.wide.subset)[i.obs])
       # and the number
       my.cell.num <- which(represented.cells == my.cell.id)
       # same for the adjacent cells: get id and number
       my.adjacent.ids <- as.numeric(names(which(adjacent.cells.matrix[my.cell.num,])))
       my.adjacent.num <- which(represented.cells %in% my.adjacent.ids)
       # likewise, which is the position of my species
-      my.sp.num <- which(all.sp == bird.sp.cells.wide$species[i.sp])
+      my.sp.num <- which(all.sp.subset == bird.sp.cells.wide.subset$species[i.sp])
       
       # diagonal (this cell, this species)
       diag.row <- num.sp * (my.cell.num - 1) + my.sp.num 
@@ -324,10 +338,10 @@ for(i.sp in 1:nrow(bird.sp.cells.wide)){
 
 # -------------------------------------------------------------------------
 # save the block matrix to disk
-save(block.matrix,file = "results/community_block_matrix.Rdata")
+save(block.matrix,file = "results/community_block_matrix_2CELLS.Rdata")
 
 # and the clean interaction data
-write.csv2(clean.int.data,"data/plant_bird_clean_interaction_data.csv",row.names = F)
-write.csv2(bird.sp.cells.wide,"data/bird_cell_presences.csv",row.names = F)
-write.csv2(plant.sp.cells.wide,"data/plant_cell_presences.csv",row.names = F)
+write.csv2(clean.int.data,"data/plant_bird_clean_interaction_data_2CELLS.csv",row.names = F)
+write.csv2(bird.sp.cells.wide.subset,"data/bird_cell_presences_2CELLS.csv",row.names = F)
+write.csv2(plant.sp.cells.wide.subset,"data/plant_cell_presences_2CELLS.csv",row.names = F)
 
