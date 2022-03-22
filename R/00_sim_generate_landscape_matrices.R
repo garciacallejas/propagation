@@ -25,8 +25,8 @@ library(raster)
 
 # -------------------------------------------------------------------------
 # generate a grid landscape with 0-1 habitat values in each cell
-ncol = 50
-nrow = 50
+ncol = 20
+nrow = 20
 
 num.landscape.categories <- 10
 num.category.replicates <- 10
@@ -38,17 +38,30 @@ spatial.autocorr <- seq(0.1,0.9, length.out = num.landscape.categories)
 # generate nested list
 landscape.list <- list()
 
+# check that mean suitability is conserved across categories
+mean.suit <- expand_grid(spatial.autocorr = spatial.autocorr,replicate = 1:num.category.replicates,mean.suit = NA)
+
 for(i in 1:length(spatial.autocorr)){
   landscape.list[[i]] <- list()
   
   for(i.rep in 1:num.category.replicates){
     my.landscape <- nlm_fbm(ncol = ncol,nrow = nrow,fract_dim = spatial.autocorr[i])
+    # show_landscape(my.landscape)
     my.matrix <- raster::as.matrix(my.landscape)
     landscape.list[[i]][[i.rep]] <- my.matrix
+    mean.suit$mean.suit[which(mean.suit$spatial.autocorr == spatial.autocorr[i] & mean.suit$replicate == i.rep)] <- mean(my.matrix)
   }# for each replicate
   
 }# for each landscape category
 names(landscape.list) <- paste("sa_",spatial.autocorr,sep="")
-# show_landscape(landscape.list,n_col = 3)
+
+# -------------------------------------------------------------------------
+# is mean suitability maintained?
+# TODO test differences across categories, an ANOVA
+# -------------------------------------------------------------------------
 
 save(landscape.list,file = "results/landscape_matrices.RData")
+
+
+
+

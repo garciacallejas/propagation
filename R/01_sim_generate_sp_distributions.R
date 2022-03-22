@@ -3,7 +3,7 @@
 
 # INPUTS
 # - list of simulated landscapes: "results/landscape_matrices.RData"
-# - list of metawebs: "results/sim_networks.csv" -- OR MATRICES?
+# - list of metawebs: "results/sim_degree_dist_networks.csv"
 # - dataframe of species landscape suitability: "results/sp_suitability.csv"
 
 # OUTPUTS
@@ -19,7 +19,10 @@
 suit.df <- read.csv2("results/sp_suitability.csv")
 load("results/landscape_matrices.RData")
 
-sim.networks <- read.csv2("results/sim_networks.csv")
+# use the networks generated from a degree distribution gradient
+sim.networks <- read.csv2("results/sim_degree_dist_networks.csv")
+
+# -------------------------------------------------------------------------
 
 landscape.categories <- names(landscape.list)
 network.categories <- unique(sim.networks$generative.model)
@@ -28,6 +31,8 @@ landscape.replicates <- 1:length(landscape.list[[1]])
 
 landscape.rows <- nrow(landscape.list[[1]][[1]]) 
 landscape.cols <- ncol(landscape.list[[1]][[1]])
+
+cells <- landscape.rows * landscape.cols
 
 sp.names <- unique(suit.df$sp)
 
@@ -43,7 +48,7 @@ if(identical(network.replicates,landscape.replicates)){
 
 # -------------------------------------------------------------------------
 
-# TODO TOO BIG!!!
+# TODO 50 sp * 50x50 cells is TOO BIG!!!
 
 # create landscape matrix template
 landscape.matrix.template <- matrix(0,nrow = cells * length(sp.names),
@@ -56,6 +61,8 @@ sp.presence <- list()
 
 # matrices
 landscape.matrices <- list()
+
+# TODO for now, only sp.presence is filled
 
 # go through each landscape category, network category, and replicate
 for(i.land in 1:length(landscape.categories)){

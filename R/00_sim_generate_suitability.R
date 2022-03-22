@@ -10,7 +10,7 @@
 # - dataframe with optimum and deviation values for every sp: "results/sp_suitability.csv"
 # -------------------------------------------------------------------------
 
-richness <- 50
+richness <- 30
 sp.names <- paste("sp",1:richness,sep="")
 
 # -------------------------------------------------------------------------
