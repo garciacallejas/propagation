@@ -4,6 +4,7 @@
 # INPUTS
 # - richness
 # - for increasing connectance: min, max values
+# - for increasing connectace + variance in degree dist: min,max poisson lambda
 # - categories in the gradient
 # - replicates per category
 
@@ -19,15 +20,28 @@ library(igraph)
 source("R/horizontal_community_matrix.R")
 
 # -------------------------------------------------------------------------
-# start with random matrices of increasing connectance
+# two different models so far: 
+# RC - simply increasing (R, random) matrix (C) connectance
+# PD - sampling degree distribution from a (P) poisson (D) dist, therefore increasing
+# both connectance and variance of the degree dist
+
+generative.model <- ("PD") #RC
 
 richness <-  50
 num.categories <- 10
 num.category.replicates <- 10
+
+# poisson model
+min.lambda <- 1
+max.lambda <- 15 # this should vary with richness. for S = 50, 15 gives connectance = 0.3
+
+# connectance model
 min.connectance <- 0.1
 max.connectance <- 0.9
 
-# some constants
+# some constants for sampling interaction strengths
+int.mean <- 0
+int.sd <- 1
 tau <- 1.5
 diag.dom <- 0
 # -------------------------------------------------------------------------
