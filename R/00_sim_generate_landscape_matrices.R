@@ -9,7 +9,7 @@
 
 # OUTPUTS
 # - nested list: landscape.list[[category]][[replicate]]: "results/landscape_matrices.RData"
-
+# - landscape categories and their autocorrelation values: "results/spatial_autocorrelation_categories.csv"
 # -------------------------------------------------------------------------
 
 library(tidyverse)
@@ -33,7 +33,7 @@ num.category.replicates <- 10
 
 # -------------------------------------------------------------------------
 
-spatial.autocorr <- seq(0.1,0.9, length.out = num.landscape.categories)
+spatial.autocorr <- round(seq(0.1,0.9, length.out = num.landscape.categories),2)
 
 # generate nested list
 landscape.list <- list()
@@ -53,13 +53,16 @@ for(i in 1:length(spatial.autocorr)){
   }# for each replicate
   
 }# for each landscape category
-names(landscape.list) <- paste("sa_",spatial.autocorr,sep="")
+names(landscape.list) <- paste("sa",1:num.landscape.categories,sep="")
 
 # -------------------------------------------------------------------------
 # is mean suitability maintained?
 # TODO test differences across categories, an ANOVA
 # -------------------------------------------------------------------------
-
+write.csv2(data.frame(landscape.category = names(landscape.list),
+                      spatial.autocorr.value = spatial.autocorr),
+           "results/spatial_autocorrelation_categories.csv",
+           row.names = FALSE)
 save(landscape.list,file = "results/landscape_matrices.RData")
 
 

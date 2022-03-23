@@ -11,7 +11,7 @@
 # - nested list of adjacency matrices: sim.degree.dist.matrices[[model]][[replicate]]
 # "results/sim_degree_dist_network_matrices.Rdata"
 # - dataframe with edge list of every network: "results/sim_degree_dist_networks.csv"
-
+# - dataframe with network categories and the lambda parameter of each
 # -------------------------------------------------------------------------
 
 library(tidyverse)
@@ -98,3 +98,9 @@ sim.networks <- bind_rows(edge.lists)
 
 save(sim.matrices,file = "results/sim_degree_dist_network_matrices.RData")
 write.csv2(sim.networks,"results/sim_degree_dist_networks.csv",row.names = FALSE)
+write.csv2(data.frame(network.category = generative.models,
+                      poisson.lambda = round(degree.dist.gradient,2)),
+           "results/network_gradient_categories.csv",
+           row.names = FALSE)
+
+
