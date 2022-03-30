@@ -9,6 +9,7 @@
 # "results/sim_landscape_matrices/NETWORKCATEGORY_LANDSCAPECATEGORY_REPLICATE_RICHNESS_CELLS.RData
 # - dispersal distances dataframe:
 # "results/dispersal_kernels.csv"
+# - cell coordinates and distances: "results/cell_coordinates.csv","results/cell_distances.csv"
 
 # OUTPUTS
 # - andscape matrices with dispersal, each stored individually
@@ -29,6 +30,9 @@ landscapes.path <- "results/sim_landscape_matrices/"
 load("results/presence_dataframes.RData")
 disp.df <- read.csv2("results/dispersal_kernels.csv")
 
+cell.distances <- read.csv2("results/cell_distances.csv")
+cell.coords <- read.csv2("results/cell_coordinates.csv")
+
 # -------------------------------------------------------------------------
 # get some parameters
 
@@ -43,13 +47,28 @@ cells <- landscape.rows * landscape.cols
 sp.names <- sort(unique(disp.df$sp))
 richness <- length(sp.names)
 
-# -------------------------------------------------------------------------
-# I need the distances between each cell of the landscapes
-# since I know the number of cells, I don't need to load any created landscape
-# rather, it's easier to build one and obtain distances on the fly
+# cell distances are stored in a dataframe, so transform them back to matrix
+cell.dist.df <- pivot_wider(cell.distances, names_from = cell_to, values_from = distance)
+cell.dist.matrix <- as.matrix(cell.dist.df[,-1],dimnames = list(1:cells,1:cells))
 
-temp.land <- expand.grid(x = 1:landscape.cols, y = 1:landscape.rows)
-distance.matrix <- dist(temp.land, diag=T, upper=T)
+# -------------------------------------------------------------------------
+# temporary list storing dataframes with info on which cells are connected by which sp
+
+for(i.land in 1:length(landscape.categories)){
+  sp.dispersal[[i.land]] <- list()
+  for(i.net in 1:length(network.categories)){
+    sp.dispersal[[i.land]][[i.net]] <- list()
+    for(i.disp in 1:length(dispersal.categories)){
+      sp.dispersal[[i.land]][[i.net]][[i.disp]] <- list()
+      for(i.rep in 1:replicates){
+        
+        
+      }# for i.rep
+    }# for i.disp
+  }# for i.net
+}# for i.land
+
+
 
 # -------------------------------------------------------------------------
 # iterate through each generated landscape to add dispersal links
@@ -77,120 +96,115 @@ for(i.land in 1:length(landscape.categories)){
         
         landscape <- my.landscape.matrix
         
-        # # 3 - generate matrix of distances between patches
-        # # igraph structure from adjacency matrix
-        # patch.graph <- igraph::graph_from_adjacency_matrix(adjmatrix = patch.connectivity,mode = "undirected",diag = FALSE)
-        # # calculate distances between patches
-        # patch.distances <- igraph::distances(graph = patch.graph,mode = "out")
-        # 
-        # # 4 - foraging and dispersal niches
-        # 
-        # # remap the niches to the range 0-d
-        # foraging.niche <- c(0,niche,1)
-        # foraging.niche <- foraging.niche - min(foraging.niche)
-        # foraging.niche <- foraging.niche/max(foraging.niche)
-        # foraging.niche <- foraging.niche * max.foraging.rate
-        # foraging.niche <- foraging.niche[2:(length(foraging.niche)-1)]
-        # 
-        # dispersal.niche <- c(0,niche,1)
-        # dispersal.niche <- dispersal.niche - min(dispersal.niche)
-        # dispersal.niche <- dispersal.niche/max(dispersal.niche)
-        # dispersal.niche <- dispersal.niche * max.dispersal.rate
-        # dispersal.niche <- dispersal.niche[2:(length(dispersal.niche)-1)]
-        # 
-        # # create metacommunity matrix
-        # D = matrix(0,nr=N*S,nc = N*S)
-        # 
-        # # 1. maximum distances reachable by any species
-        # 
-        # if(max.dispersal.rate > 0){
-        #   
-        #   sp.max.distance <- (max.dispersal.distance+0.1)/max(dispersal.niche)*dispersal.niche
-        #   # matrix containing the dispersal coefficient of each sp for each distance
-        #   dispersal.coef.data <- matrix(0,nrow=S,ncol=max(patch.distances))
-        #   
-        #   if(dispersal.coefs == "constant"){
-        #     # every species disperses at least the nearest patch
-        #     dispersal.coef.data[,1] <- max.dispersal.rate
-        #     
-        #     # the rest of the coefficients are constant within the reachable distances
-        #     for(i.row in 1:nrow(dispersal.coef.data)){
-        #       if(sp.max.distance[i.row]>2){
-        #         dispersal.coef.data[i.row,2:floor(sp.max.distance[i.row])] <- max.dispersal.rate
-        #       }# if reaches other patches
-        #     }# for each row
-        #     
-        #     # divide dispersal across reachable patches
-        #     if(ncol(dispersal.coef.data)>1){
-        #       dispersal.coef.data <- t(apply(X = dispersal.coef.data,MARGIN = 1,FUN = function(x) x/sum(x>0)))
-        #     }
-        #     
-        #   }else if(dispersal.coefs == "scaling"){
-        #     
-        #     # this formula is a line equation expanded to 1) find m and 2) find b, and these plugged into y=mx*b to get the values of dispersal(y) for a certain distance(x)
-        #     for(i.sp in 1:nrow(dispersal.coef.data)){
-        #       my.sp.distances <- ((max.dispersal.rate/(1-sp.max.distance[i.sp]))*1:floor(sp.max.distance[i.sp])) + (max.dispersal.rate*(-sp.max.distance[i.sp]))/(1-sp.max.distance[i.sp])
-        #       if(length(my.sp.distances)<ncol(dispersal.coef.data)){
-        #         my.sp.distances[(length(my.sp.distances)+1):ncol(dispersal.coef.data)] <- 0
-        #       }
-        #       dispersal.coef.data[i.sp,1:ncol(dispersal.coef.data)] <- my.sp.distances[1:ncol(dispersal.coef.data)] 
-        #     }# for i.sp
-        #     dispersal.coef.data[dispersal.coef.data<0] <- 0
-        #     
-        #     # divide dispersal effort across reachable patches
-        #     for(i.row in 1:nrow(dispersal.coef.data)){
-        #       if(sum(dispersal.coef.data[i.row,]>0)>1){
-        #         dispersal.coef.data[i.row,] <- dispersal.coef.data[i.row,] * (max.dispersal.rate/sum(dispersal.coef.data[i.row,]))
-        #       }# if more than one patch
-        #     }# for i.row
-        #     
-        #   }# if-else dispersal is constant or scaling
-        #   
-        #   # 5 - assign dispersal coefficients
-        #   # maintaining mass balance, i.e. the sum of the dispersal to all connected patches i.e. sum(d/N-1)
-        #   # is equivalent to the loss of the source patch, i.e. -d
-        #   # -d is the value of the diagonal patch, then.
-        #   
-        #   # update matrix D
-        #   for(i.row in 1:nrow(D)){
-        #     for(i.col in 1:ncol(D)){
-        #       
-        #       # if diagonal element and not main diagonal,
-        #       # it is a dispersal coefficient
-        #       if(i.row %% S == i.col %% S & i.row != i.col){
-        #         
-        #         # which sp?
-        #         my.sp <- i.row %% S
-        #         if(my.sp == 0){my.sp <- S}
-        #         
-        #         # source and dest patch
-        #         source.patch <- ceiling(i.col/S) 
-        #         dest.patch <- ceiling(i.row/S)
-        #         
-        #         # double check
-        #         if(source.patch != dest.patch){
-        #           
-        #           # distance among them
-        #           my.distance <- patch.distances[source.patch,dest.patch]
-        #           
-        #           # the value is the one from dispersal.coef.data (the net effort for a given distance)
-        #           # divided by the number of patches at that distance
-        #           
-        #           # how many patches at this distance?
-        #           patches.at.dist <- table(patch.distances[source.patch,])
-        #           patches.at.dist <- as.integer(patches.at.dist[which(names(patches.at.dist) == my.distance)])
-        #           
-        #           # divide the effort from foraging.coef.data among all patches within a given distance
-        #           dispersal.coef.weight <- dispersal.coef.data[my.sp,my.distance]/patches.at.dist
-        #           
-        #           D[i.row,i.col] <- dispersal.coef.weight
-        #           
-        #         }# if different patch
-        #       }# if dispersal cell
-        #       
-        #     }# for i.col
-        #   }# for i.row
+        
+        # -----------------------------------------------------------------
+        # obtain dispersal links
+        
+        my.disp <- subset(disp.df, 
+                          dispersal.category == dispersal.categories[i.disp] &
+                            replicate == i.rep)
+        
+        # expand the presence dataframe to see the cells to which
+        # each sp can potentially disperse
+        # by crossing presence information with cell distances
+        # and with dispersal distances
+        
+        my.presence <- sp.presence[[i.land]][[i.net]][[i.rep]]
+        my.presence <- subset(my.presence,presence == TRUE) %>%
+          dplyr::select(sp,cell) %>%
+          rename(cell_from = cell)
+        my.presence.full <- expand_grid(my.presence,cell_to = 1:cells)
+        my.presence.full.2 <- left_join(my.presence.full,cell.distances)
+        my.presence.full.3 <- left_join(my.presence.full.2,my.disp[,c("sp","dispersal.distance")])
+        my.presence.full.3 <- subset(my.presence.full.3,cell_from != cell_to)
+        
+        my.presence.full.3$dispersal.potential <- ifelse(my.presence.full.3$distance <= 
+                                                           my.presence.full.3$dispersal.distance,
+                                                         TRUE,FALSE)
+        my.dispersal.potential <- subset(my.presence.full.3[,c("sp","cell_from",
+                                                               "cell_to","dispersal.potential")],
+                                         dispersal.potential == TRUE)
+        
+        # now, check which of the target cells have populations of the species
+        # because only those will have realized dispersal
+        my.presence$presence <- TRUE
+        my.dispersal.realized <- left_join(my.dispersal.potential,my.presence,
+                                           by = c("cell_to" = "cell_from",
+                                                  "sp" = "sp")) %>%
+          replace_na(list(presence = FALSE))
+        my.dispersal.realized$dispersal <- as.logical(my.dispersal.realized$dispersal.potential * 
+                                                        my.dispersal.realized$presence)
+        my.dispersal.r2 <- subset(my.dispersal.realized[,c("sp","cell_from","cell_to","dispersal")],
+                                  dispersal == TRUE)
+        
+        # remove symmetrical information
+        my.dispersal.r2$duplicated <- FALSE
+        for(i in 1:nrow(my.dispersal.r2)){
+          if(!my.dispersal.r2$duplicated[i]){
+            dup <- which(my.dispersal.r2$cell_from == my.dispersal.r2$cell_to[i] &
+                           my.dispersal.r2$cell_to == my.dispersal.r2$cell_from[i] &
+                           my.dispersal.r2$sp == my.dispersal.r2$sp[i])
+            my.dispersal.r2$duplicated[dup] <- TRUE
+          }# if
+        }# for i
+        
+        # this is the distilled dataframe
+        # including the dispersal coefficient to assign
+        # i.e. 1/number of dispersing cells (irrespective of distance)
+        
+        # this may change in the future
+        
+        my.dispersal <- subset(my.dispersal.r2,duplicated == FALSE) %>%
+          group_by(sp,cell_from) %>%
+          mutate(dispersal.coef = 1/n()) %>%
+          dplyr::select(sp,cell_from,cell_to,dispersal.coef)
 
+        # ----------------------------------------------------------------
+        # update landscape matrix
+        
+        # I only need to go through the upper triangle, since 
+        # dispersal is symmetric
+        # hence the weird nested for loops
+          for(i.row in 1:(nrow(landscape)-1)){
+            
+            # which sp?
+            my.sp <- i.row %% richness
+            if(my.sp == 0){my.sp <- richness}
+            
+            for(i.col in (i.row+1):ncol(landscape)){
+
+              # if diagonal element and not main diagonal,
+              # it is a dispersal coefficient
+              # if(i.row %% richness == i.col %% richness & i.row != i.col){
+              if(i.row %% richness == i.col %% richness){
+
+                # source and dest cell
+                source.cell <- ceiling(i.col/richness)
+                dest.cell <- ceiling(i.row/richness)
+
+                # double check
+                if(source.cell != dest.cell){
+                  
+                  valid.dispersal <- which(my.dispersal$sp == sp.names[my.sp] &
+                                             (my.dispersal$cell_from == source.cell &
+                                              my.dispersal$cell_to == dest.cell | 
+                                                my.dispersal$cell_from == dest.cell &
+                                                my.dispersal$cell_to == source.cell) )
+                  if(length(valid.dispersal) == 1){
+                    
+                    disp.coef <- my.dispersal$dispersal.coef[valid.dispersal]
+                    
+                    # fill the symmetric positions
+                    landscape[i.row,i.col] <- disp.coef
+                    landscape[i.col,i.row] <- disp.coef
+                  }# if realized dispersal
+                  
+                }# if different cell
+              }# if dispersal cell
+
+            }# for i.col
+          }# for i.row
+        
         # -----------------------------------------------------------------
         # store landscape with dispersal
         

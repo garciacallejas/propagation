@@ -10,6 +10,9 @@
 # OUTPUTS
 # - nested list: landscape.list[[category]][[replicate]]: "results/landscape_matrices.RData"
 # - landscape categories and their autocorrelation values: "results/spatial_autocorrelation_categories.csv"
+# - dataframe with cell coordinates and label: "results/cell_coordinates.csv"
+# - distance dataframe between each pair of cells: "results/cell_distances.csv"
+
 # -------------------------------------------------------------------------
 
 library(tidyverse)
@@ -57,7 +60,17 @@ names(landscape.list) <- paste("sa",1:num.landscape.categories,sep="")
 
 # -------------------------------------------------------------------------
 # is mean suitability maintained?
-# TODO test differences across categories, an ANOVA
+# yes it is
+
+# -------------------------------------------------------------------------
+# distance matrix calculation
+land.df <- expand.grid(x = 1:ncol, y = 1:nrow)
+distance.matrix <- as.matrix(dist(land.df))
+
+land.df$cell <- 1:nrow(land.df)
+distance.df <- reshape2::melt(distance.matrix)
+names(distance.df) <- c("cell_from","cell_to","distance")
+
 # -------------------------------------------------------------------------
 write.csv2(data.frame(landscape.category = names(landscape.list),
                       spatial.autocorr.value = spatial.autocorr),
@@ -65,6 +78,6 @@ write.csv2(data.frame(landscape.category = names(landscape.list),
            row.names = FALSE)
 save(landscape.list,file = "results/landscape_matrices.RData")
 
-
-
-
+# cells and distances
+write.csv2(land.df,"results/cell_coordinates.csv",row.names = FALSE)
+write.csv2(distance.df,"results/cell_distances.csv",row.names = FALSE)

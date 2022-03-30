@@ -5,6 +5,7 @@
 # - list of simulated landscapes: "results/landscape_matrices.RData"
 # - list of metawebs: "results/sim_degree_dist_networks.csv"
 # - dataframe of species landscape suitability: "results/sp_suitability.csv"
+# - dataframe of cell coordinates: "results/cell_coordinates.csv"
 
 # OUTPUTS
 # - list of dataframes with species presence per cell: 
@@ -28,6 +29,7 @@ sim.networks <- read.csv2("results/sim_degree_dist_networks.csv")
 # load adjacency matrices
 load("results/sim_degree_dist_network_matrices.RData")
 
+cell.coords <- read.csv2("results/cell_coordinates.csv")
 # -------------------------------------------------------------------------
 
 landscape.categories <- names(landscape.list)
@@ -107,12 +109,17 @@ for(i.land in 1:length(landscape.categories)){
           # suitability value of this cell
           landscape.value <- landscape.list[[i.land]][[i.rep]][i.row,i.col]
           
+          # id of this cell
+          cell.value <- cell.coords$cell[which(cell.coords$x == i.col &
+                                                 cell.coords$y == i.row)]
+          
           # presence dataframe for this cell
           cell.df <- tidyr::expand_grid(landscape.category = landscape.categories[i.land],
                                  network.category = network.categories[i.net],
                                  replicate = i.rep,
                                  landscape.row = i.row,
                                  landscape.col = i.col,
+                                 cell = cell.value,
                                  sp = sp.names,
                                  presence = FALSE)
           
@@ -161,7 +168,7 @@ for(i.land in 1:length(landscape.categories)){
                                             "_",num.sp,"sp",
                                             "_",cells,"cells.RData",
                                             sep=""))
-      
+
       # append to overall presences list
       sp.presence[[i.land]][[i.net]][[i.rep]] <- bind_rows(presence.df)
     }# for i.rep
