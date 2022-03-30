@@ -145,7 +145,7 @@ for(i.land in 1:length(landscape.categories)){
           init.col <- init.row
           end.row <- num.sp + (num.sp * (cell.id - 1))
           end.col <- end.row
-          
+
           my.landscape.matrix[init.row:end.row,init.col:end.col] <- my.network
           
         }# i.col
@@ -165,16 +165,13 @@ for(i.land in 1:length(landscape.categories)){
       # append to overall presences list
       sp.presence[[i.land]][[i.net]][[i.rep]] <- bind_rows(presence.df)
     }# for i.rep
-    
-    names(sp.presence[[i.land]]) <- network.categories
-    # names(landscape.matrices[[i.land]]) <- network.categories
   }# for i.net
-  
-  names(sp.presence) <- landscape.categories
-  # names(landscape.matrices) <- landscape.categories
+  names(sp.presence[[i.land]]) <- network.categories
 }# for i.land
+names(sp.presence) <- landscape.categories
 
+# -------------------------------------------------------------------------
 
-
+save(sp.presence,file = "results/presence_dataframes.RData")
 
 
