@@ -42,7 +42,8 @@ degree.dist.gradient <- seq(from = min.lambda,
                             to = max.lambda, 
                             length.out = num.categories)
 
-generative.models <- paste("dd",1:num.categories,sep="")
+# generative.models <- paste("dd",1:num.categories,sep="")
+generative.models <- paste("dd",sprintf("%02d", 1:num.categories),sep="")
 
 # this dataframe will hold the edge list of each matrix
 sim.networks <- expand_grid(generative.model = generative.models,

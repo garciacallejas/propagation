@@ -47,29 +47,6 @@ cells <- landscape.rows * landscape.cols
 sp.names <- sort(unique(disp.df$sp))
 richness <- length(sp.names)
 
-# cell distances are stored in a dataframe, so transform them back to matrix
-cell.dist.df <- pivot_wider(cell.distances, names_from = cell_to, values_from = distance)
-cell.dist.matrix <- as.matrix(cell.dist.df[,-1],dimnames = list(1:cells,1:cells))
-
-# -------------------------------------------------------------------------
-# temporary list storing dataframes with info on which cells are connected by which sp
-
-for(i.land in 1:length(landscape.categories)){
-  sp.dispersal[[i.land]] <- list()
-  for(i.net in 1:length(network.categories)){
-    sp.dispersal[[i.land]][[i.net]] <- list()
-    for(i.disp in 1:length(dispersal.categories)){
-      sp.dispersal[[i.land]][[i.net]][[i.disp]] <- list()
-      for(i.rep in 1:replicates){
-        
-        
-      }# for i.rep
-    }# for i.disp
-  }# for i.net
-}# for i.land
-
-
-
 # -------------------------------------------------------------------------
 # iterate through each generated landscape to add dispersal links
 
@@ -88,6 +65,7 @@ for(i.land in 1:length(landscape.categories)){
                               richness,"sp_",
                               cells,"cells.RData",sep="")
       
+      # my.landscape.matrix
       load(paste(landscapes.path,landscape.name,sep=""))
       
       # -------------------------------------------------------------------
@@ -95,7 +73,6 @@ for(i.land in 1:length(landscape.categories)){
       for(i.disp in 1:length(dispersal.categories)){
         
         landscape <- my.landscape.matrix
-        
         
         # -----------------------------------------------------------------
         # obtain dispersal links
@@ -216,7 +193,7 @@ for(i.land in 1:length(landscape.categories)){
                                           richness,"sp_",
                                           cells,"cells.RData",sep="")
         
-        save(landscape, paste(landscapes.path,landscape.dispersal.name,sep=""))
+        save(landscape, file = paste(landscapes.path,landscape.dispersal.name,sep=""))
         
       }# for i.disp
     }# for i.rep

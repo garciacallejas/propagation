@@ -56,7 +56,7 @@ for(i in 1:length(spatial.autocorr)){
   }# for each replicate
   
 }# for each landscape category
-names(landscape.list) <- paste("sa",1:num.landscape.categories,sep="")
+names(landscape.list) <- paste("sa",sprintf("%02d", 1:num.landscape.categories),sep="")
 
 # -------------------------------------------------------------------------
 # is mean suitability maintained?

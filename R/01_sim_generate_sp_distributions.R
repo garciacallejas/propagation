@@ -170,7 +170,7 @@ for(i.land in 1:length(landscape.categories)){
                                             sep=""))
 
       # append to overall presences list
-      sp.presence[[i.land]][[i.net]][[i.rep]] <- bind_rows(presence.df)
+      sp.presence[[i.land]][[i.net]][[i.rep]] <- dplyr::bind_rows(presence.df)
     }# for i.rep
   }# for i.net
   names(sp.presence[[i.land]]) <- network.categories
