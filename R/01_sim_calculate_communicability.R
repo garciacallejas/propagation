@@ -19,19 +19,29 @@ source("R/communicability.R")
 # -------------------------------------------------------------------------
 # read general data
 
+network.categories <- read.csv2("results/network_gradient_categories.csv")
+landscape.categories <- read.csv2("results/spatial_autocorrelation_categories.csv")
+# TODO update
+dispersal.categories <-  paste("dk",sprintf("%02d", 1:10),sep="")
+
 # -------------------------------------------------------------------------
 # recover factors
 
-landscape.categories
-network.categories
-dispersal.categories
-replicates
+network.categories <- network.categories$network.category
+landscape.categories <- landscape.categories$landscape.category
+# dispersal.categories
+replicates <- length(network.categories)
 
-richness
-cells
+richness <- 30
+cells <- 400
 
 # -------------------------------------------------------------------------
 # go through each replicate
+
+i.land <- 1
+i.net <- 2
+i.disp <- 3
+i.rep <- 4
 
 for(i.land in 1:length(landscape.categories)){
   for(i.net in 1:length(network.categories)){
@@ -39,19 +49,21 @@ for(i.land in 1:length(landscape.categories)){
       for(i.rep in 1:replicates){
         
         my.landscape.name <- paste("results/sim_landscape_matrices/",
-                                   landscape.categories[i.land],"_",
                                    network.categories[i.net],"_",
+                                   landscape.categories[i.land],"_",
                                    dispersal.categories[i.disp],"_",
+                                   "re",i.rep,"_",
                                    richness,"sp_",cells,"cells.RData",sep="")
         my.df.name <- paste("results/communicability/comm_",
-                            landscape.categories[i.land],"_",
                             network.categories[i.net],"_",
+                            landscape.categories[i.land],"_",
                             dispersal.categories[i.disp],"_",
+                            "re",i.rep,"_",
                             richness,"sp_",cells,"cells.RData",sep="")
         load(my.landscape.name)
         
         # TODO UPDATE WITH PROPER NAME
-        communicability.matrices <- communicability(my.landscape) 
+        communicability.matrices <- communicability(landscape) 
         
         # tidy functions only work with dataframes, but this still works, and is fast
         comm.df <- reshape2::melt(communicability.matrices[[1]],
