@@ -3,9 +3,7 @@
 # according to a gradient in spatial autocorrelation
 
 # INPUTS
-# - number of columns and rows
-# - categories in the gradient
-# - replicates per category
+# - simulation parameters dataframe: "results/sim_landscape_matrices/parameters_vX.csv"
 
 # OUTPUTS
 # - nested list: landscape.list[[category]][[replicate]]: "results/landscape_matrices.RData"
@@ -28,11 +26,14 @@ library(raster)
 
 # -------------------------------------------------------------------------
 # generate a grid landscape with 0-1 habitat values in each cell
-ncol = 20
-nrow = 20
 
-num.landscape.categories <- 10
-num.category.replicates <- 10
+param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
+
+ncol <- param$ncol
+nrow <- param$nrow
+
+num.landscape.categories <- param$num.landscape.categories
+num.category.replicates <- param$num.category.replicates
 
 # -------------------------------------------------------------------------
 

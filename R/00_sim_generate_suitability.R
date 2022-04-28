@@ -9,8 +9,9 @@
 # OUTPUTS
 # - dataframe with optimum and deviation values for every sp: "results/sp_suitability.csv"
 # -------------------------------------------------------------------------
+param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 
-richness <- 30
+richness <-  param$richness
 sp.names <- paste("sp",1:richness,sep="")
 
 # -------------------------------------------------------------------------

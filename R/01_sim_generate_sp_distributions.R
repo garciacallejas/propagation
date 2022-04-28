@@ -57,8 +57,6 @@ if(identical(network.replicates,landscape.replicates)){
 
 # -------------------------------------------------------------------------
 
-# TODO 50 sp * 50x50 cells is TOO BIG!!!
-
 matrix.n.rows <- num.sp*cells
 df.names <- expand.grid(sp.names,1:cells)
 matrix.names <- paste(df.names[,1],df.names[,2],sep="-")
