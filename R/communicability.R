@@ -17,7 +17,7 @@ communicability <- function(A){
   range01 <- function(x){(x-min(x))/(max(x)-min(x))}
   
   # is my matrix binary?
-  is.binary <- sum(A > 1) == 0
+  is.binary <- sum(A != 1 & A != 0) == 0
   if(is.binary){
     # binary
     # beware, it takes a while for a 200M elements matrix - RAM is a limiting factor

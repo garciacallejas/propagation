@@ -23,10 +23,10 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # set number of cores -----------------------------------------------------
 
-workers <- 10
-cl <- makeCluster(workers)
-# register the cluster for using foreach
-registerDoParallel(cl)
+# workers <- 10
+# cl <- makeCluster(workers)
+# # register the cluster for using foreach
+# registerDoParallel(cl)
 
 # -------------------------------------------------------------------------
 # read general data
