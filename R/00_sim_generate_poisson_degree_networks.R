@@ -20,30 +20,32 @@ library(igraph)
 library(gamlss.dist)
 
 # -------------------------------------------------------------------------
+param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 
-richness <-  30
-num.categories <- 10
-num.category.replicates <- 10
+richness <-  param$richness
+num.network.categories <- param$num.network.categories
+num.category.replicates <- param$num.category.replicates
+
 
 # poisson mean
-min.lambda <- 3
-max.lambda <- 15 # this should vary with richness. for S = 50, 15 gives connectance = 0.3
+min.lambda <- param$min.lambda
+max.lambda <- param$max.lambda # this should vary with richness. for S = 50, 15 gives connectance = 0.3
 
 # some constants for sampling interaction strengths
-int.mean <- 0
-int.sd <- 1
-tau <- 1.5
-diag.dom <- 0
+int.mean <- param$int.mean
+int.sd <- param$int.sd
+tau <- param$tau
+diag.dom <- param$diag.dom
 # -------------------------------------------------------------------------
 
 sp.names <- paste("sp",1:richness,sep="")
 
 degree.dist.gradient <- seq(from = min.lambda,
                             to = max.lambda, 
-                            length.out = num.categories)
+                            length.out = num.network.categories)
 
-# generative.models <- paste("dd",1:num.categories,sep="")
-generative.models <- paste("dd",sprintf("%02d", 1:num.categories),sep="")
+# generative.models <- paste("dd",1:num.network.categories,sep="")
+generative.models <- paste("dd",sprintf("%02d", 1:num.network.categories),sep="")
 
 # this dataframe will hold the edge list of each matrix
 sim.networks <- expand_grid(generative.model = generative.models,

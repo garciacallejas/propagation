@@ -15,33 +15,37 @@
 library(tidyverse)
 library(igraph) # for path lenghts
 source("R/communicability.R")
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # -------------------------------------------------------------------------
 # read general data
+param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 
 network.categories <- read.csv2("results/network_gradient_categories.csv")
 landscape.categories <- read.csv2("results/spatial_autocorrelation_categories.csv")
-# TODO update
-dispersal.categories <-  paste("dk",sprintf("%02d", 1:10),sep="")
+dispersal.categories <-  read.csv2("results/dispersal_kernels.csv")
+cell.distances <- read.csv2("results/cell_distances.csv")
+cell.distances$cell_from <- as.character(cell.distances$cell_from)
+cell.distances$cell_to <- as.character(cell.distances$cell_to)
 
 # -------------------------------------------------------------------------
 # recover factors
 
 network.categories <- network.categories$network.category
 landscape.categories <- landscape.categories$landscape.category
-# dispersal.categories
-replicates <- length(network.categories)
+dispersal.categories <- unique(dispersal.categories$dispersal.category)
+replicates <- param$num.category.replicates
 
-richness <- 30
-cells <- 400
+richness <- param$richness
+cells <- param$ncol * param$nrow
 
 # -------------------------------------------------------------------------
 # go through each replicate
 
 i.land <- 1
-i.net <- 2
-i.disp <- 3
-i.rep <- 4
+i.net <- 1
+i.disp <- 1
+i.rep <- 1
 
 for(i.land in 1:length(landscape.categories)){
   for(i.net in 1:length(network.categories)){
@@ -62,18 +66,17 @@ for(i.land in 1:length(landscape.categories)){
                             richness,"sp_",cells,"cells.RData",sep="")
         load(my.landscape.name)
         
-        # TODO UPDATE WITH PROPER NAME
         communicability.matrices <- communicability(landscape) 
         
         # tidy functions only work with dataframes, but this still works, and is fast
         comm.df <- reshape2::melt(communicability.matrices[[1]],
                                   value.name = "binary.communicability")
         
-        # TODO adapt to extract cell of sp1 and cell of sp2
-        # df1$sp1 <- sub("\\-.*", "", df1$Var1)
-        # df1$grid.id.sp1 <- sub(".*-", "", df1$Var1)
-        # df1$sp2 <- sub("\\-.*", "", df1$Var2)
-        # df1$grid.id.sp2 <- sub(".*-", "", df1$Var2)  
+        # extract cell of sp1 and cell of sp2
+        comm.df$sp1 <- sub("\\-.*", "", comm.df$Var1)
+        comm.df$cell1 <- sub(".*-", "", comm.df$Var1)
+        comm.df$sp2 <- sub("\\-.*", "", comm.df$Var2)
+        comm.df$cell2 <- sub(".*-", "", comm.df$Var2)
         
         comm.df$scaled.binary.communicability <- range01(comm.df$binary.communicability)
         
@@ -93,26 +96,31 @@ for(i.land in 1:length(landscape.categories)){
         # turning it to df is quick
         df.path.lengths <- reshape2::melt(path.lengths,value.name = "shortest.path.length")
         
-        # TODO adapt to extract cell of sp1 and cell of sp2
-        # df.path.lengths$sp1 <- sub("\\-.*", "", df.path.lengths$Var1)
-        # df.path.lengths$grid.id.sp1 <- sub(".*-", "", df.path.lengths$Var1)
-        # df.path.lengths$sp2 <- sub("\\-.*", "", df.path.lengths$Var2)
-        # df.path.lengths$grid.id.sp2 <- sub(".*-", "", df.path.lengths$Var2)  
+        df.path.lengths$sp1 <- sub("\\-.*", "", df.path.lengths$Var1)
+        df.path.lengths$cell1 <- sub(".*-", "", df.path.lengths$Var1)
+        df.path.lengths$sp2 <- sub("\\-.*", "", df.path.lengths$Var2)
+        df.path.lengths$cell2 <- sub(".*-", "", df.path.lengths$Var2) 
+        
+        comm.df$Var1 <- NULL
+        comm.df$Var2 <- NULL
+        
+        df.path.lengths$Var1 <- NULL
+        df.path.lengths$Var2 <- NULL
         
         # sp1,cell1,sp2,cell2 should be common
         comm.df <- left_join(comm.df,df.path.lengths)
         
         # -------------------------------------------------------------------------
         # get spatial distance between cells
-        comm.df <- left_join(comm.df,cell.distances,by(c("cell1" = "cell_from",
-                                                         "cell2" = "cell_to")))
+        comm.df <- left_join(comm.df,cell.distances,by = c("cell1" = "cell_from",
+                                                         "cell2" = "cell_to"))
         
         comm.df <- comm.df[,c("sp1","cell1",
                               "sp2","cell2","binary.communicability",
                               "scaled.binary.communicability",
                               "weighted.communicability",
                               "shortest.path.length",
-                              "spatial.distance")]
+                              "distance")]
         
         save(comm.df, file = my.df.name)
         

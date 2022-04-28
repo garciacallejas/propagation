@@ -19,10 +19,20 @@
 
 # -------------------------------------------------------------------------
 
+library(foreach)
+library(doParallel)
+
 library(tidyverse)
 library(igraph)
 library(NLMR)
 library(sf)
+
+# set number of cores -----------------------------------------------------
+
+workers <- 10
+cl <- makeCluster(workers)
+# register the cluster for using foreach
+registerDoParallel(cl)
 
 # -------------------------------------------------------------------------
 landscapes.path <- "results/sim_landscape_matrices/"
@@ -47,15 +57,30 @@ cells <- landscape.rows * landscape.cols
 sp.names <- sort(unique(disp.df$sp))
 richness <- length(sp.names)
 
+# ID to loop over ---------------------------------------------------------
+
+id <- expand.grid(network.categories,landscape.categories,1:replicates)
+id.char <- sort(paste(id[,1],"_",id[,2],"_",id[,3],sep=""))
+
 # -------------------------------------------------------------------------
 # iterate through each generated landscape to add dispersal links
 
 # i.net <- i.land <- i.rep <- i.disp <- 1
 
-for(i.land in 1:length(landscape.categories)){
-  for(i.net in 1:length(network.categories)){
-    for(i.rep in 1:replicates){
+# for(i.land in 1:length(landscape.categories)){
+#   for(i.net in 1:length(network.categories)){
+#     for(i.rep in 1:replicates){
       
+results <- foreach(i.id = 1:length(id.char), 
+                   # .combine=comb.fun, 
+                   .packages = 'tidyverse') %dopar% {
+
+                     # recover landscape,network, and replicate from the ID
+                     # i.land <- sub(".*_", "", id.char[i.id])
+                     i.land <- as.numeric(substr(id.char[i.id],3,4))
+                     i.net <- as.numeric(substr(id.char[i.id],8,9))
+                     i.rep <- as.numeric(substr(id.char[i.id],11,nchar(id.char[i.id])))
+                     
       # -------------------------------------------------------------------
       # load landscape matrix
       
@@ -196,11 +221,6 @@ for(i.land in 1:length(landscape.categories)){
         save(landscape, file = paste(landscapes.path,landscape.dispersal.name,sep=""))
         
       }# for i.disp
-    }# for i.rep
-  }# for i.net
-}# for i.land
+    }# foreach id.char
 
-
-
-
-
+stopCluster(cl)

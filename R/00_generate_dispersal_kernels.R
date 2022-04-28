@@ -14,14 +14,15 @@ out.file <- "results/dispersal_kernels.csv"
 library(tidyverse)
 
 # -------------------------------------------------------------------------
+param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 
-richness <-  30
-num.categories <- 10
-num.category.replicates <- 10
+richness <-  param$richness
+num.dispersal.categories <- param$num.dispersal.categories
+num.category.replicates <- param$num.category.replicates
 
 # exponetial rate
-min.rate <- .75
-max.rate <- .25 
+min.rate <- param$min.rate
+max.rate <- param$max.rate
 
 # -------------------------------------------------------------------------
 
@@ -29,9 +30,9 @@ sp.names <- paste("sp",1:richness,sep="")
 
 dispersal.rate.gradient <- seq(from = min.rate,
                             to = max.rate, 
-                            length.out = num.categories)
+                            length.out = num.dispersal.categories)
 
-dispersal.categories <- paste("dk",sprintf("%02d", 1:num.categories),sep="")
+dispersal.categories <- paste("dk",sprintf("%02d", 1:num.dispersal.categories),sep="")
 
 # disp.df <- tidyr::expand_grid(sp = sp.names, dispersal.category = dispersal.categories,
 #                               replicate = 1:num.category.replicates,
