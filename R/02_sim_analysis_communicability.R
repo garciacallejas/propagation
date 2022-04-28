@@ -36,12 +36,31 @@ cells <- param$ncol * param$nrow
 # This should be theoretically valid, as these are indpendent instances
 # of the same model, thus the interpretation of the coefficients does not vary.
 
+i.model <- i.file <- 1
+
+sample.perc <- .05
+n.models <- 100
+my.models <- list()
 
 my.files <- list.files("results/communicability",full.names = T)
 
-load(my.files[1])
+for(i.model in 1:n.models){
+  
+  my.data <- list()
+  
+  for(i.file in 1:length(my.files)){
+    
+    load(my.files[i.file])
+    unique.pairs <- subset(comm.df, sp1 < sp2)
+    
+    my.sample <- unique.pairs[sample(nrow(unique.pairs),round(nrow(unique.pairs)*sample.perc),F),]
+    
+  }# for i.file
+  
+}# for i.model
 
-unique.pairs <- subset(comm.df, sp1 < sp2)
+
+
 
 
 
