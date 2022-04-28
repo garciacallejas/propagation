@@ -31,7 +31,7 @@ dispersal.rate.gradient <- seq(from = min.rate,
                             to = max.rate, 
                             length.out = num.categories)
 
-dispersal.categories <- paste("disp",sprintf("%02d", 1:num.categories),sep="")
+dispersal.categories <- paste("dk",sprintf("%02d", 1:num.categories),sep="")
 
 # disp.df <- tidyr::expand_grid(sp = sp.names, dispersal.category = dispersal.categories,
 #                               replicate = 1:num.category.replicates,
