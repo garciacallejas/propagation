@@ -23,10 +23,10 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # set number of cores -----------------------------------------------------
 
-# workers <- 10
-# cl <- makeCluster(workers)
-# # register the cluster for using foreach
-# registerDoParallel(cl)
+workers <- 10
+cl <- makeCluster(workers)
+# register the cluster for using foreach
+registerDoParallel(cl)
 
 # -------------------------------------------------------------------------
 # read general data
@@ -76,7 +76,7 @@ results <- foreach(i.id = 1:length(id.char),
                                    dispersal.categories[i.disp],"_",
                                    "re",i.rep,"_",
                                    richness,"sp_",cells,"cells.RData",sep="")
-        my.df.name <- paste("results/communicability/comm_",
+        my.df.name <- paste("/home/david/Data/temp_NZ/results/communicability/comm_",
                             network.categories[i.net],"_",
                             landscape.categories[i.land],"_",
                             dispersal.categories[i.disp],"_",
