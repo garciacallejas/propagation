@@ -57,9 +57,12 @@ sim.networks <- expand_grid(generative.model = generative.models,
 sim.matrices <- list()
 edge.lists <- list()
 # -------------------------------------------------------------------------
+connectances <- numeric(length(generative.models))
 
 for(i in 1:length(generative.models)){
   sim.matrices[[i]] <- list()
+  connectance.rep <- numeric(num.category.replicates)
+  
   for(j in 1:num.category.replicates){
     
     my.dist <- extraDistr::rtpois(n = richness,lambda = degree.dist.gradient[i],a = 0)
@@ -68,7 +71,8 @@ for(i in 1:length(generative.models)){
     
     my.net <- igraph::sample_degseq(my.dist,method = "vl")
     my.matrix <- as.matrix(igraph::as_adjacency_matrix(my.net,type = "both"))
-    # cat("lambda:",degree.gradient[i.dist],"- connectance:",(sum(my.dist)/richness^2),"\n")
+    # cat("lambda:",degree.dist.gradient[i],"- connectance:",(sum(my.matrix)/richness^2),"\n")
+    connectance.rep[j] <- sum(my.matrix)/richness^2
     
     # assign interaction strengths according to an "extended" normal dist
     weights <- abs(gamlss.dist::rSHASHo(sum(my.dist), mu = int.mean, 
@@ -91,6 +95,7 @@ for(i in 1:length(generative.models)){
     }
     edge.lists[[length(edge.lists)+1]] <- my.edge.list
   }
+  connectances[i] <- mean(connectance.rep)
 }
 names(sim.matrices) <- generative.models
 
@@ -101,7 +106,8 @@ sim.networks <- bind_rows(edge.lists)
 save(sim.matrices,file = "results/sim_degree_dist_network_matrices.RData")
 write.csv2(sim.networks,"results/sim_degree_dist_networks.csv",row.names = FALSE)
 write.csv2(data.frame(network.category = generative.models,
-                      poisson.lambda = round(degree.dist.gradient,2)),
+                      poisson.lambda = round(degree.dist.gradient,2),
+                      connectance = round(connectances,3)),
            "results/network_gradient_categories.csv",
            row.names = FALSE)
 
