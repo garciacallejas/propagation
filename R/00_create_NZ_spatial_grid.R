@@ -1,41 +1,74 @@
 
 
-# create 1km grid over a NZ shapefile
+# create square grid over a NZ shapefile
 library(sf)
+library(stars)
 library(tidyverse)
 
 # this should be already in WGS84
 NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
 
 # -------------------------------------------------------------------------
+# set cell size in meters
 
-# create 1km grid - in these units, 0.1 is 1km
-# TODO check - that is not right, it should be .0001 I think
-grid_1 <- st_make_grid(NZ, cellsize = c(1, 1)) %>% 
-  st_sf(grid_id = 1:length(.))
+grid.size <- 100000 # 100km
+# grid.size <- 10000 # 10km
+# grid.size <- 1000 # 1km
 
-# crop grid, keep only cells with land
-grid_1_land <- st_intersection(grid_1,NZ)
+# -------------------------------------------------------------------------
 
-# create labels for each grid_id
-grid_lab <- st_centroid(grid_1_land) %>% cbind(st_coordinates(.))
+# transform to NZMG projection (https://epsg.io/27200)
+NZ2 <- st_transform(NZ, crs= st_crs(27200))
+# st_crs(NZ2)$proj4string
+# st_crs(NZ2)$units_gdal
 
-# view the polygons and grid
+# generate spatial grid
+grid <- st_as_stars(st_bbox(NZ2), dx = grid.size, dy = grid.size)
+grid <- st_as_sf(grid)
+grid <- grid[NZ2,]
+grid$cell_id <- 1:nrow(grid)
+
+# add x-y coords of the centroid
+grid_with_labels <- st_centroid(grid) %>% cbind(st_coordinates(.))
+
+# Plot
+# plot(st_geometry(grid), axes = TRUE, reset = FALSE)
+# plot(st_geometry(NZ2), border = "darkred", add = TRUE)
+
+# with ggplot
 # ggplot() +
-#   # geom_sf(data = NZ, fill = 'white', lwd = 0.05) +
+#   geom_sf(data = NZ2, fill = 'white', lwd = 0.05) +
 #   # geom_sf(data = pts, color = 'red', size = 1.7) +
-#   geom_sf(data = grid_1_land, fill = 'transparent', lwd = 0.3) +
-#   # geom_text(data = grid_lab, aes(x = X, y = Y, label = grid_id), size = 2) +
+#   geom_sf(data = grid, fill = 'transparent', lwd = 0.3) +
+#   geom_text(data = grid_with_labels, 
+#             aes(x = X, y = Y, label = cell_id), 
+#             size = 2) +
 #   coord_sf(datum = NA)  +
 #   labs(x = "") +
 #   labs(y = "")
 
-# -------------------------------------------------------------------------
-
-st_write(grid_lab,"data/NZ_grid_labs.csv")
-st_write(grid_1_land,"data/NZ_grid.shp")
 
 # -------------------------------------------------------------------------
+
+st_write(grid_with_labels,paste("data/NZ_grid_",grid.size/1e3,"km.csv",sep=""))
+st_write(grid,paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""))
+
+# -------------------------------------------------------------------------
+
+# older approach, takes much longer
+# grid_1 <- st_make_grid(NZt, cellsize = c(grid.size, grid.size)) %>% 
+#   st_sf(grid_id = 1:length(.))
+# 
+# # crop grid, keep only cells with land
+# grid_1_land <- st_intersection(grid_1,NZt)
+# 
+# # create labels for each grid_id
+# grid_lab <- st_centroid(grid_1_land) %>% cbind(st_coordinates(.))
+
+
+# -------------------------------------------------------------------------
+
+
 # select a small set of cells for testing
 
 # my.cells <- c(45,46)
