@@ -26,7 +26,7 @@ max.rate <- param$max.rate
 
 # -------------------------------------------------------------------------
 
-sp.names <- paste("sp",1:richness,sep="")
+sp.names <- paste("sp",sprintf("%02d", 1:richness),sep="")
 
 dispersal.rate.gradient <- seq(from = min.rate,
                             to = max.rate, 

@@ -26,7 +26,6 @@ richness <-  param$richness
 num.network.categories <- param$num.network.categories
 num.category.replicates <- param$num.category.replicates
 
-
 # poisson mean
 min.lambda <- param$min.lambda
 max.lambda <- param$max.lambda # this should vary with richness. for S = 50, 15 gives connectance = 0.3
@@ -38,7 +37,7 @@ tau <- param$tau
 diag.dom <- param$diag.dom
 # -------------------------------------------------------------------------
 
-sp.names <- paste("sp",1:richness,sep="")
+sp.names <- paste("sp",sprintf("%02d", 1:richness),sep="")
 
 degree.dist.gradient <- seq(from = min.lambda,
                             to = max.lambda, 

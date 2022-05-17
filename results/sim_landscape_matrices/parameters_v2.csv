@@ -1,2 +1,2 @@
 "";"ncol";"nrow";"num.landscape.categories";"richness";"num.network.categories";"min.lambda";"max.lambda";"int.mean";"int.sd";"tau";"diag.dom";"num.dispersal.categories";"min.rate";"max.rate";"num.category.replicates"
-"1";10;10;5;30;5;3;15;0;0;1,5;0;5;0,75;0,25;10
+"1";10;10;5;30;5;3;15;0;1;1,5;0;5;0,75;0,25;10

@@ -12,12 +12,12 @@
 param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 
 richness <-  param$richness
-sp.names <- paste("sp",1:richness,sep="")
+sp.names <- paste("sp",sprintf("%02d", 1:richness),sep="")
 
 # -------------------------------------------------------------------------
 
 mean.optimum <- runif(richness)
-sd.optimum <- 0.1
+sd.optimum <- 0.2
 
 suit.df <- data.frame(sp = sp.names, optimum = mean.optimum,sd = sd.optimum)
 

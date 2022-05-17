@@ -65,12 +65,6 @@ id.char <- sort(paste(id[,1],"_",id[,2],"_",id[,3],sep=""))
 # -------------------------------------------------------------------------
 # iterate through each generated landscape to add dispersal links
 
-# i.net <- i.land <- i.rep <- i.disp <- 1
-
-# for(i.land in 1:length(landscape.categories)){
-#   for(i.net in 1:length(network.categories)){
-#     for(i.rep in 1:replicates){
-      
 results <- foreach(i.id = 1:length(id.char), 
                    # .combine=comb.fun, 
                    .packages = 'tidyverse') %dopar% {
@@ -206,6 +200,15 @@ results <- foreach(i.id = 1:length(id.char),
             
           }# for i.col
         }# for i.row
+        
+        
+        # -----------------------------------------------------------------
+        # remove absent species from every cell - this can be done simply
+        # by keeping only columns and rows with 1 entries in their diagonal,
+        # since each present species has 1 in the corresponding diagonal.
+        
+        present.sp <- diag(landscape) == 1
+        landscape <- landscape[present.sp,present.sp] 
         
         # -----------------------------------------------------------------
         # store landscape with dispersal

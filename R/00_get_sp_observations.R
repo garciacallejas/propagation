@@ -10,8 +10,26 @@ library(CoordinateCleaner)
 # https://rpubs.com/julianlavila/GbifCleanning
 
 # -------------------------------------------------------------------------
+# set grid size in meters
+grid.size <- 100000
+
+# set time interval for observations - those older than this year will be discarded
+year.first.obs <- 2010
+
+# maximum number of observations gathered
+# limit is 100000
+max.obs <- 50000
+
+# plot figure of species records?
+plot.obs <- FALSE
+
+# -------------------------------------------------------------------------
 # NZ grid
-NZ_grid <- st_read("data/NZ_grid.shp")
+NZ_grid <- st_read(paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""))
+
+# shapefile for plotting
+NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
+NZ2 <- st_transform(NZ, crs= st_crs(27200))
 
 # list of interactions with names of taxa
 int.list <- read.csv("../datasets/plant-bird interactions and traits/plant_bird_interactions.csv")
@@ -43,18 +61,25 @@ sp.list <- sort(unique(gsub("\\_.*","",sp.list)))
 # Cornus capitata (7161042)
 ###############################################
 
+# other errors
+# id 204
+
 for(i.sp in 1:length(sp.list)){
   
   print(paste(Sys.time(),"- downloading data from sp:",sp.list[i.sp]))
   
   #obtain data from GBIF via rgbif
-  # TODO: update limit for the real thing
   dat <- occ_search(
     # taxonKey = 7161042,
     scientificName = sp.list[i.sp],
-    limit = 100000, # hard limit is 100k
+    limit = max.obs, # hard limit is 100k
     country = "NZ",
-    hasCoordinate = T
+    hasCoordinate = T,
+    fields=c("species", "decimalLongitude", "decimalLatitude", "countryCode",
+             "gbifID",
+             "coordinateUncertaintyInMeters", "year",
+             "basisOfRecord", "institutionCode",
+             "protocol")
   )
   
   # names(dat$data) #a lot of columns
@@ -84,9 +109,13 @@ for(i.sp in 1:length(sp.list)){
     # names(dat)
     
     # clean up records without coordinates
-    dat <- dat %>%
+    # and by date
+    dat2 <- dat$data %>%
       filter(!is.na(decimalLongitude))%>%
-      filter(!is.na(decimalLatitude))
+      filter(!is.na(decimalLatitude)) %>%
+      filter(year >= year.first.obs)
+    
+    if(nrow(dat2)>0){
     
     #plot data to get an overview
     # wm <- borders("world", colour="gray70", fill="gray80")
@@ -98,17 +127,18 @@ for(i.sp in 1:length(sp.list)){
     #              colour = "red", size = 0.9)+
     #   theme_bw()+ 
     #   labs(title = paste("Spatial distribution of records",dat$species))
-    
+
+    # -------------------------------------------------------------------------
     # more clean up of records with potential errors in different fields
     
     #convert country code from ISO2c to ISO3c
-    dat$countryCode <-  countrycode(dat$countryCode, 
+    dat2$countryCode <-  countrycode(dat2$countryCode, 
                                     origin =  'iso2c', 
                                     destination = 'iso3c')
     
     #flag problems
-    dat <- data.frame(dat)
-    flags <- clean_coordinates(x = dat, 
+    dat2 <- data.frame(dat2)
+    flags <- clean_coordinates(x = dat2, 
                                lon = "decimalLongitude", lat = "decimalLatitude",
                                countries = "countryCode", 
                                species = "species",
@@ -119,7 +149,7 @@ for(i.sp in 1:length(sp.list)){
     # summary(flags)
     
     # exclude problematic records
-    dat_cl <- dat[flags$.summary,]
+    dat_cl <- dat2[flags$.summary,]
     
     # uncertainty of spatial coordinates
     # hist(dat_cl$coordinateUncertaintyInMeters / 1000, breaks = 20)
@@ -146,17 +176,22 @@ for(i.sp in 1:length(sp.list)){
     # -------------------------------------------------------------------------
     # assign a grid_id to each observation within the limits
     
+    # first, set the crs of the original data
     projcrs <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
     obs <- st_as_sf(x = dat_cl,                         
                     coords = c("decimalLongitude", "decimalLatitude"),
                     crs = projcrs)
-    observations_id <- st_intersection(obs,NZ_grid)
+    
+    # then, transform to NZMG
+    obs.nz <- st_transform(obs, crs= st_crs(27200))
+    observations_id <- st_intersection(obs.nz,NZ_grid)
     
     # convert to standard dataframe
     obs_id_df <- observations_id[,c("grid_id","species","year","geometry","gbifID",
                                     "protocol","samplingProtocol","institutionCode")] %>%
       mutate(lat = sf::st_coordinates(.)[,2],
-             lon = sf::st_coordinates(.)[,1]) %>%
+             lon = sf::st_coordinates(.)[,1],
+             crs = "NZMG") %>%
       sf::st_set_geometry(NULL)
     
     # -------------------------------------------------------------------------
@@ -164,54 +199,48 @@ for(i.sp in 1:length(sp.list)){
     my.sp <- str_replace(sp.list[i.sp]," ","_")
   
     write.csv2(obs_id_df,paste("results/sp_observations/",
-                               my.sp,
-                               ".csv",sep=""),row.names = FALSE)
+                               my.sp,"_",grid.size/1e3,"km.csv",sep=""),
+               row.names = FALSE)
     
+
+    # -------------------------------------------------------------------------
+    if(plot.obs){
+      sp.plot <- ggplot()+
+        geom_sf(data = NZ2, fill = 'white', lwd = 0.05) +
+        # geom_sf(NZ_grid, fill = 'transparent', lwd = 0.3, mapping = aes()) +
+        coord_sf(datum = NA) +
+        geom_point(data = obs_id_df, aes(x = lon, y = lat),
+                   colour = "cyan4", size = 1.2, alpha=0.6)+
+        annotation_scale(location = "br", width_hint = 0.1,line_width = 0.5) +
+        annotation_north_arrow(location = "tr", which_north = "true",
+                               pad_x = unit(0.5, "cm"),
+                               pad_y = unit(0.5, "cm"),
+                               height = unit(1, "cm"),
+                               width = unit(1, "cm"), # 0.2 # 0.3
+                               style = north_arrow_fancy_orienteering)+
+        labs(x = "", y = "",
+             title = obs_id_df$species[1],
+             caption = paste("Source: GBif\nAuthor: David Garcia-Callejas\nDate:",
+                             format(Sys.time(), '%Y-%m-%d')))+
+        theme(plot.title=element_text(size=14),
+              plot.caption = element_text(size = 7, color="grey60"),
+              panel.background= element_rect(fill = "grey96")) +
+        theme(axis.ticks = element_blank(), 
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank()) +
+        NULL
+      
+      ggsave(paste("results/images/",my.sp,".pdf",
+                   sep=""),
+             plot = sp.plot,
+             device = cairo_pdf,
+             width = 6, height = 6,dpi = 300)
+      
+    }# if plot
+
+    }# if >0 observations
   }# if !is.null
 }# for i.sp
 
-# -------------------------------------------------------------------------
-# plot test
 
-# ggplot() +
-#   geom_sf(NZ_grid, fill = 'transparent', lwd = 0.3, mapping = aes()) +
-#   # geom_text(data = grid_lab, aes(x = X, y = Y, label = grid_id), size = 3, color = "darkred") +
-#   # coord_sf(datum = NA)  +
-#   geom_sf(data = observations_id,
-#              colour = "cyan4", size = 1.2, alpha=0.6)+
-#   NULL
 
-# -------------------------------------------------------------------------
-# another way of plotting the data
-
-# world <- ne_countries(scale = "medium", returnclass = "sf")
-# 
-# coords<-dat_cl %>% 
-#   dplyr::select(species,decimalLongitude, decimalLatitude ) %>%
-#   rename(Longitude=decimalLongitude, Latitude=decimalLatitude)
-# 
-# coords_sf<- coords %>% 
-#   st_as_sf(coords=(2:3))
-# 
-# bbox_new <- st_bbox(coords_sf)
-# 
-# ggplot()+
-#   geom_sf(data = world, fill= NA) +
-#   coord_sf(xlim=c(bbox_new[1],bbox_new[3]), 
-#            ylim=c(bbox_new[2],bbox_new[4]))+
-#   geom_point(data = dat_cl, aes(x = decimalLongitude, y = decimalLatitude),
-#              colour = "cyan4", size = 1.2, alpha=0.6)+
-#   annotation_scale(location = "br", width_hint = 0.1,line_width = 0.5) +
-#   annotation_north_arrow(location = "tr", which_north = "true", 
-#                          pad_x = unit(1.5, "cm"), 
-#                          pad_y = unit(0.5, "cm"),
-#                          height = unit(1, "cm"),
-#                          width = unit(1, "cm"), # 0.2 # 0.3
-#                          style = north_arrow_fancy_orienteering)+
-#   labs(x = "", y = "",
-#        title =paste("Record distribution of:", dat_cl$species),
-#        caption = paste("Source: GBif\nAuthor: yep\nDate:",
-#                        format(Sys.time(), '%d %B, %Y')))+
-#   theme(plot.title=element_text(size=19),
-#         plot.caption = element_text(size = 7, color="grey60"),
-#         panel.background= element_rect(fill = "grey96"))

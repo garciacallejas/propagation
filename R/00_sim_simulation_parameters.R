@@ -45,7 +45,7 @@ sim.parameters$max.lambda <- 15 # this should vary with richness. for S = 50, 15
 
 # some constants for sampling interaction strengths
 sim.parameters$int.mean <- 0
-int.sd <- 1
+sim.parameters$int.sd <- 1
 sim.parameters$tau <- 1.5
 sim.parameters$diag.dom <- 0
 
