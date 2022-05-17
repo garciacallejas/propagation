@@ -12,6 +12,11 @@
 # "results/communicability/comm_LANDSCAPE_NETWORK_DISPERSAL_REPLICATE_SP_CELLS.csv"
 
 # -------------------------------------------------------------------------
+read.sim.landscape.path <- "/home/david/Work/datasets/NZ/results/sim_landscape_matrices/"
+save.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/"
+save.gce.path <- "/home/david/Work/datasets/NZ/results/gce/GCE_"
+
+# -------------------------------------------------------------------------
 
 library(foreach)
 library(doParallel)
@@ -23,7 +28,7 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # set number of cores -----------------------------------------------------
 
-workers <- 10
+workers <- 6
 cl <- makeCluster(workers)
 # register the cluster for using foreach
 registerDoParallel(cl)
@@ -61,90 +66,121 @@ id.char <- sort(paste(id[,1],"_",id[,2],"_",id[,3],"_",id[,4],sep=""))
 
 results <- foreach(i.id = 1:length(id.char), 
                    # .combine=comb.fun, 
-                   .packages = 'tidyverse') %dopar% {
-                     
-                     # recover landscape,network, and replicate from the ID
-                     # i.land <- sub(".*_", "", id.char[i.id])
-                     i.land <- as.numeric(substr(id.char[i.id],3,4))
-                     i.net <- as.numeric(substr(id.char[i.id],8,9))
-                     i.disp <- as.numeric(substr(id.char[i.id],13,14))
-                     i.rep <- as.numeric(substr(id.char[i.id],16,nchar(id.char[i.id])))
-        
-        my.landscape.name <- paste("results/sim_landscape_matrices/",
-                                   network.categories[i.net],"_",
-                                   landscape.categories[i.land],"_",
-                                   dispersal.categories[i.disp],"_",
-                                   "re",i.rep,"_",
-                                   richness,"sp_",cells,"cells.RData",sep="")
-        my.df.name <- paste("/home/david/Data/temp_NZ/results/communicability/comm_",
-                            network.categories[i.net],"_",
-                            landscape.categories[i.land],"_",
-                            dispersal.categories[i.disp],"_",
-                            "re",i.rep,"_",
-                            richness,"sp_",cells,"cells.RData",sep="")
-        load(my.landscape.name)
-        
-        communicability.matrices <- communicability(landscape) 
-        
-        # tidy functions only work with dataframes, but this still works, and is fast
-        comm.df <- reshape2::melt(communicability.matrices[[1]],
-                                  value.name = "binary.communicability")
-        
-        # extract cell of sp1 and cell of sp2
-        comm.df$sp1 <- sub("\\-.*", "", comm.df$Var1)
-        comm.df$cell1 <- sub(".*-", "", comm.df$Var1)
-        comm.df$sp2 <- sub("\\-.*", "", comm.df$Var2)
-        comm.df$cell2 <- sub(".*-", "", comm.df$Var2)
-        
-        comm.df$scaled.binary.communicability <- range01(comm.df$binary.communicability)
-        
-        # this should be valid because the two matrices have the same dimensions and names
-        dfw <- reshape2::melt(communicability.matrices[[2]],
-                              value.name = "weighted.communicability")
-        comm.df$weighted.communicability <- dfw$weighted.communicability
-        
-        # -------------------------------------------------------------------------
-        # get path lengths as well
-        graph.D <- igraph::graph_from_adjacency_matrix(adjmatrix = communicability.matrices[[1]],
-                                                       mode = "undirected",
-                                                       weighted = "1",diag = FALSE)
-        # this takes ~10min
-        path.lengths <- igraph::distances(graph = graph.D,algorithm = "unweighted")
-        
-        # turning it to df is quick
-        df.path.lengths <- reshape2::melt(path.lengths,value.name = "shortest.path.length")
-        
-        df.path.lengths$sp1 <- sub("\\-.*", "", df.path.lengths$Var1)
-        df.path.lengths$cell1 <- sub(".*-", "", df.path.lengths$Var1)
-        df.path.lengths$sp2 <- sub("\\-.*", "", df.path.lengths$Var2)
-        df.path.lengths$cell2 <- sub(".*-", "", df.path.lengths$Var2) 
-        
-        comm.df$Var1 <- NULL
-        comm.df$Var2 <- NULL
-        
-        df.path.lengths$Var1 <- NULL
-        df.path.lengths$Var2 <- NULL
-        
-        # sp1,cell1,sp2,cell2 should be common
-        comm.df <- left_join(comm.df,df.path.lengths)
-        
-        # -------------------------------------------------------------------------
-        # get spatial distance between cells
-        comm.df <- left_join(comm.df,cell.distances,by = c("cell1" = "cell_from",
-                                                         "cell2" = "cell_to"))
-        
-        comm.df <- comm.df[,c("sp1","cell1",
-                              "sp2","cell2","binary.communicability",
-                              "scaled.binary.communicability",
-                              "weighted.communicability",
-                              "shortest.path.length",
-                              "distance")]
-        
-        save(comm.df, file = my.df.name)
-        
-}# foreach id.char
+                   .packages = c('tidyverse',"igraph",
+                                 "intsegration","reshape2")) %dopar% 
+  {
+    
+    source("R/auxiliary_functions/GCE_weighted.R")
+    
+    # recover landscape,network, and replicate from the ID
+    # i.land <- sub(".*_", "", id.char[i.id])
+    i.land <- as.numeric(substr(id.char[i.id],3,4))
+    i.net <- as.numeric(substr(id.char[i.id],8,9))
+    i.disp <- as.numeric(substr(id.char[i.id],13,14))
+    i.rep <- as.numeric(substr(id.char[i.id],16,nchar(id.char[i.id])))
+    
+    my.landscape.name <- paste(read.sim.landscape.path,
+                               network.categories[i.net],"_",
+                               landscape.categories[i.land],"_",
+                               dispersal.categories[i.disp],"_",
+                               "re",i.rep,"_",
+                               richness,"sp_",cells,"cells.RData",sep="")
+    my.df.name <- paste(save.comm.path,"/comm_",
+                        network.categories[i.net],"_",
+                        landscape.categories[i.land],"_",
+                        dispersal.categories[i.disp],"_",
+                        "re",i.rep,"_",
+                        richness,"sp_",cells,"cells.RData",sep="")
+    load(my.landscape.name)
+    
+    communicability.matrices <- communicability(landscape) 
+    
+    # tidy functions only work with dataframes, but this still works, and is fast
+    comm.df <- reshape2::melt(communicability.matrices[[1]],
+                              value.name = "binary.communicability")
+    
+    # extract cell of sp1 and cell of sp2
+    comm.df$sp1 <- sub("\\-.*", "", comm.df$Var1)
+    comm.df$cell1 <- sub(".*-", "", comm.df$Var1)
+    comm.df$sp2 <- sub("\\-.*", "", comm.df$Var2)
+    comm.df$cell2 <- sub(".*-", "", comm.df$Var2)
+    
+    comm.df$scaled.binary.communicability <- range01(comm.df$binary.communicability)
+    
+    # this should be valid because the two matrices have the same dimensions and names
+    dfw <- reshape2::melt(communicability.matrices[[2]],
+                          value.name = "weighted.communicability")
+    comm.df$weighted.communicability <- dfw$weighted.communicability
+    
+    # -------------------------------------------------------------------------
+    # get path lengths as well
+    graph.D <- igraph::graph_from_adjacency_matrix(adjmatrix = landscape,
+                                                   mode = "undirected",
+                                                   weighted = "1",diag = FALSE)
+    # this takes ~10min
+    path.lengths <- igraph::distances(graph = graph.D,algorithm = "unweighted")
+    
+    # turning it to df is quick
+    df.path.lengths <- reshape2::melt(path.lengths,value.name = "shortest.path.length")
+    
+    df.path.lengths$sp1 <- sub("\\-.*", "", df.path.lengths$Var1)
+    df.path.lengths$cell1 <- sub(".*-", "", df.path.lengths$Var1)
+    df.path.lengths$sp2 <- sub("\\-.*", "", df.path.lengths$Var2)
+    df.path.lengths$cell2 <- sub(".*-", "", df.path.lengths$Var2) 
+    
+    comm.df$Var1 <- NULL
+    comm.df$Var2 <- NULL
+    
+    df.path.lengths$Var1 <- NULL
+    df.path.lengths$Var2 <- NULL
+    
+    # sp1,cell1,sp2,cell2 should be common
+    comm.df <- left_join(comm.df,df.path.lengths)
+    
+    # -------------------------------------------------------------------------
+    # get spatial distance between cells
+    comm.df <- left_join(comm.df,cell.distances,by = c("cell1" = "cell_from",
+                                                       "cell2" = "cell_to"))
+    
+    comm.df <- comm.df[,c("sp1","cell1",
+                          "sp2","cell2","binary.communicability",
+                          "scaled.binary.communicability",
+                          "weighted.communicability",
+                          "shortest.path.length",
+                          "distance")]
+    
+    
+    # -------------------------------------------------------------------------
+    # global communication efficiency - a network level property
+    
+    landscape.graph <- igraph::graph_from_adjacency_matrix(landscape,
+                                                           weighted = T)
+    landscape.gce <- GCE_weighted(g = landscape.graph,normalised = T,
+                                  directed = T)
+
+# -------------------------------------------------------------------------
+    net.gce <- data.frame(landscape.category = landscape.categories[i.land],
+                          network.category = network.categories[i.net],
+                          dispersal.category = dispersal.categories[i.disp],
+                          replicate = i.rep,
+                          normalised.gce = landscape.gce$normalised)
+    
+# -------------------------------------------------------------------------
+
+    write.csv2(net.gce,paste(save.gce.path,
+                             network.categories[i.net],"_",
+                             landscape.categories[i.land],"_",
+                             dispersal.categories[i.disp],"_",
+                             "re",i.rep,"_",
+                             richness,"sp_",cells,"cells.csv",sep=""))
+    save(comm.df, file = my.df.name)
+    
+  }# foreach id.char
 
 stopCluster(cl)
 
 # -------------------------------------------------------------------------
 
+gce.df <- list.files("/home/david/Work/datasets/NZ/results/gce",full.names = T) %>% map_dfr(read.csv2)
+gce.df$X <- NULL
+write.csv2(gce.df,"results/sim_GCE.csv",row.names = F)

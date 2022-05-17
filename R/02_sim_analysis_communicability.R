@@ -24,6 +24,8 @@ cell.distances <- read.csv2("results/cell_distances.csv")
 cell.distances$cell_from <- as.character(cell.distances$cell_from)
 cell.distances$cell_to <- as.character(cell.distances$cell_to)
 
+gce.df <- read.csv2("results/sim_GCE.csv")
+
 # -------------------------------------------------------------------------
 # recover factors
 
@@ -41,11 +43,11 @@ cells <- param$ncol * param$nrow
 # This should be theoretically valid, as these are indpendent instances
 # of the same model, thus the interpretation of the coefficients does not vary.
 
-i.model <- 1
-
-sample.perc <- .05
-n.models <- 100
-my.models <- list()
+# i.model <- 1
+# 
+# sample.perc <- .05
+# n.models <- 100
+# my.models <- list()
 
 my.files <- list.files("results/communicability",full.names = T)
 
@@ -138,4 +140,8 @@ my.files <- list.files("results/communicability",full.names = T)
 #   ylim(c(0,1)) +
 #   NULL
 
+  
+  
+  
+  
 
