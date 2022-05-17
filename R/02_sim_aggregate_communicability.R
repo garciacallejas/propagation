@@ -122,10 +122,13 @@ cells <- param$ncol * param$nrow
   net.df <- bind_rows(net.data)
   
 # -------------------------------------------------------------------------
-  write.csv2(nodes.df,output.nodes)
-  write.csv2(net.df,output.net)
+  write.csv2(nodes.df,output.nodes, row.names = F)
+  write.csv2(net.df,output.net, row.names = F)
 # }# for i.model
 
+  # nodes.df <- read.csv2("results/communicability_nodes.csv")
+  # net.df <- read.csv2("results/communicability_net.csv")
+  
   # pairs.means <- pairs.df %>%
   #   group_by(network.category,landscape.category,dispersal.category) %>%
   #   summarise(mean.wc = mean(wc),sd.wc = sd(wc)) 

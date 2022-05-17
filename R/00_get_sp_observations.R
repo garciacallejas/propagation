@@ -52,7 +52,7 @@ for(i.sp in 1:length(sp.list)){
   dat <- occ_search(
     # taxonKey = 7161042,
     scientificName = sp.list[i.sp],
-    limit = 10000, # hard limit is 100k
+    limit = 100000, # hard limit is 100k
     country = "NZ",
     hasCoordinate = T
   )
@@ -68,12 +68,18 @@ for(i.sp in 1:length(sp.list)){
       dplyr::select(species, decimalLongitude, decimalLatitude, countryCode,
                     gbifID,
                     coordinateUncertaintyInMeters, year,
-                    basisOfRecord, institutionCode)
+                    basisOfRecord, 
+                    institutionCode, 
+                    protocol, 
+                    samplingProtocol)
     }else{
       dat <- dat$data %>%
         dplyr::select(species, decimalLongitude, decimalLatitude, countryCode,
                       gbifID, year,
-                      basisOfRecord, institutionCode)
+                      basisOfRecord, 
+                      institutionCode, 
+                      protocol, 
+                      samplingProtocol)
     }
     # names(dat)
     
@@ -147,7 +153,8 @@ for(i.sp in 1:length(sp.list)){
     observations_id <- st_intersection(obs,NZ_grid)
     
     # convert to standard dataframe
-    obs_id_df <- observations_id[,c("grid_id","species","year","geometry","gbifID")] %>%
+    obs_id_df <- observations_id[,c("grid_id","species","year","geometry","gbifID",
+                                    "protocol","samplingProtocol","institutionCode")] %>%
       mutate(lat = sf::st_coordinates(.)[,2],
              lon = sf::st_coordinates(.)[,1]) %>%
       sf::st_set_geometry(NULL)

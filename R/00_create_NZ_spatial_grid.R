@@ -11,7 +11,7 @@ NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
 
 # create 1km grid - in these units, 0.1 is 1km
 # TODO check - that is not right, it should be .0001 I think
-grid_1 <- st_make_grid(NZ, cellsize = c(1, 1)) %>% 
+grid_1 <- st_make_grid(NZ, cellsize = c(.001, .001)) %>% 
   st_sf(grid_id = 1:length(.))
 
 # crop grid, keep only cells with land
