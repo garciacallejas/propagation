@@ -6,8 +6,20 @@
 # OUTPUTS
 
 # -------------------------------------------------------------------------
+
+comm.path <- "results/extinction_sequences/communicability"
+gce.path <- "results/extinction_sequences/"
+
+# -------------------------------------------------------------------------
 library(NLMR)
 library(tidyverse)
+library(igraph)
+library(intsegration)
+source("R/generate_landscape.R")
+source("R/remove_sp_from_landscape.R")
+source("R/communicability.R")
+source("R/auxiliary_functions/GCE_weighted.R")
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # -------------------------------------------------------------------------
 param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
@@ -21,165 +33,183 @@ network.cat <- "dd03"
 dispersal.cat <- "dk03"
 
 # -------------------------------------------------------------------------
-sp.names <- unique(suit.df$sp)
+# random, targeted_dispersal, targeted_degree, targeted_distribution
 
-richness <-  param$richness
-
-# to fully replicate the workflow of building networks, generate the set of
-# categories and take the exact value of the one chosen above.
-num.network.categories <- param$num.network.categories
-num.dispersal.categories <- param$num.dispersal.categories
-num.landscape.categories <- param$num.landscape.categories
-
-# landscape dimensions
-ncol <- param$ncol
-nrow <- param$nrow
-cells <- nrow*ncol
-
-# poisson mean
-min.lambda <- param$min.lambda
-max.lambda <- param$max.lambda # this should vary with richness. for S = 50, 15 gives connectance = 0.3
-
-# exponetial rate for dispersal
-min.rate <- param$min.rate
-max.rate <- param$max.rate
-
-# some constants for sampling interaction strengths
-int.mean <- param$int.mean
-int.sd <- param$int.sd
-tau <- param$tau
-diag.dom <- param$diag.dom
-# -------------------------------------------------------------------------
-
-
-# network degree distribution
-degree.dist.gradient <- seq(from = min.lambda,
-                            to = max.lambda, 
-                            length.out = num.network.categories)
-# generative.models <- paste("dd",1:num.network.categories,sep="")
-generative.models <- paste("dd",sprintf("%02d", 1:num.network.categories),sep="")
-
-landscape.lambda <- degree.dist.gradient[which(generative.models == network.cat)]
-
-# landscape configuration
-landscape.gradient <- round(seq(0.1,0.9, length.out = num.landscape.categories),2)
-landscape.models <- paste("sa",sprintf("%02d", 1:num.landscape.categories),sep="")
-
-landscape.sa <- landscape.gradient[which(landscape.models == landscape.cat)]
-
-# dispersal kernel
-dispersal.rate.gradient <- seq(from = min.rate,
-                               to = max.rate, 
-                               length.out = num.dispersal.categories)
-
-dispersal.models <- paste("dk",sprintf("%02d", 1:num.dispersal.categories),sep="")
-
-landscape.dispersal <- dispersal.rate.gradient[which(dispersal.models == dispersal.cat)]
+extinction.tests <- c("random","targeted_distribution","targeted_degree",
+                      "targeted_dispersal")
 
 # -------------------------------------------------------------------------
-# first, create landscape matrix
 
-my.landscape <- NLMR::nlm_fbm(ncol = ncol,nrow = nrow,fract_dim = landscape.sa)
-# show_landscape(my.landscape)
-my.matrix <- raster::as.matrix(my.landscape)
-
-
-# -------------------------------------------------------------------------
-# second, generate metaweb
-
-my.dist <- extraDistr::rtpois(n = richness,lambda = landscape.lambda,a = 0)
-# make sum even
-if (sum(my.dist) %% 2 != 0) { my.dist[1] <- my.dist[1] + 1 }
-my.net <- igraph::sample_degseq(my.dist,method = "vl")
-my.matrix <- as.matrix(igraph::as_adjacency_matrix(my.net,type = "both"))
-# assign interaction strengths according to an "extended" normal dist
-weights <- abs(gamlss.dist::rSHASHo(sum(my.dist), mu = int.mean, 
-                                    sigma = int.sd, nu = 0, tau = tau))
-my.matrix[my.matrix == 1] <- weights
-diag(my.matrix) <- 1
+landscape.list <- generate_landscape(param = param,
+                                     suit.df = suit.df,
+                                     landscape.cat = landscape.cat,
+                                     network.cat = network.cat,
+                                     dispersal.cat = dispersal.cat)
+landscape <- landscape.list[[1]]
+sp.traits <- landscape.list[[2]]
+cell.distances <- landscape.list[[3]]
+cell.distances$cell_from <- as.character(cell.distances$cell_from)
+cell.distances$cell_to <- as.character(cell.distances$cell_to)
+num.sp <- nrow(sp.traits)
 
 # -------------------------------------------------------------------------
-# third, assign species presences and absences based on landscape suitability
-landscape.n.rows <- richness*cells
-df.names <- expand.grid(sp.names,1:cells)
-landscape.names <- paste(df.names[,1],df.names[,2],sep="-")
+# extinction sequences: for each sequence, calculate metrics 
+# (gce and pairwise communicability/shortest path lengths)
+# as well as some basic network properties
 
-# create landscape matrix template
-landscape.template <- matrix(0,
-                             nrow = landscape.n.rows,
-                             ncol = landscape.n.rows,
-                             dimnames = list(landscape.names,
-                                             landscape.names))
+net.list <- list()
+gce.list <- list()
 
-my.landscape.matrix <- landscape.template
-my.landscape <- landscape.list[[i.land]][[i.rep]]
+for(i.test in 1:length(extinction.tests)){
+  
+  remaining.sp <- num.sp
+  remaining.sp.traits <- sp.traits
+  remaining.landscape <- landscape
+  
+  while(remaining.sp > 2){
+    
+    # index of the sp to remove
+    if(extinction.tests[i.test] == "random"){
+      to.remove <- sample(remaining.sp,1)
+    }else if(extinction.tests[i.test] == "targeted_dispersal"){
+      to.remove <- which(remaining.sp.traits$dispersal.distance ==
+                           max(remaining.sp.traits$dispersal.distance))
+    }else if(extinction.tests[i.test] == "targeted_degree"){
+      to.remove <- which(remaining.sp.traits$degree ==
+                           max(remaining.sp.traits$degree))
+    }else if(extinction.tests[i.test] == "targeted_distribution"){
+      to.remove <- which(remaining.sp.traits$presences ==
+                           max(remaining.sp.traits$presences))
+    }
+    
+    # if more than one sp
+    if(length(to.remove)>1){
+      to.remove <- to.remove[sample(length(to.remove),1)]
+    }
+    
+    # name of the species to remove
+    sp.to.remove <- remaining.sp.traits$sp[to.remove]
+    
+    # update landscape
+    remaining.landscape <- remove_sp_from_landscape(remaining.landscape,
+                                                    sp.name = sp.to.remove)
+    # update traits and number
+    remaining.sp <- remaining.sp - 1
+    remaining.sp.traits <- subset(remaining.sp.traits, sp != sp.to.remove)
+    
+    # check that the resulting meta-adjacency matrix is valid, i.e. 
+    # there are still interspecific links in the local communities
+    # otherwise it does not make sense to calculate metrics
+    num.interspecific.links <- sum(remaining.landscape != 0 & remaining.landscape != 1)
+    
+    # -------------------------------------------------------------------------
+    # store some network metrics
+    remaining.cells <- unique(substr(rownames(remaining.landscape),
+                                     6,nchar(rownames(remaining.landscape))))
+    
+    net.list[[length(net.list)+1]] <- data.frame(extinction_sequence = extinction.tests[i.test],
+                                                 species_removed = num.sp - remaining.sp,
+                                                 num.intraspecific.links = length(diag(remaining.landscape)),
+                                                 num.interspecific.links = num.interspecific.links,
+                                                 num.dispersal.links = sum(remaining.landscape == 1) - length(diag(remaining.landscape)),
+                                                 num.zeros = sum(remaining.landscape == 0),
+                                                 num.cells = length(remaining.cells)) 
+    
+    # -------------------------------------------------------------------------
+    # calculate metrics
+    
+    # if(num.interspecific.links > 0){
+    #   
+    #   communicability.matrices <- communicability(remaining.landscape) 
+    #   
+    #   # tidy functions only work with dataframes, but this still works, and is fast
+    #   comm.df <- reshape2::melt(communicability.matrices[[1]],
+    #                             value.name = "binary.communicability")
+    #   
+    #   # extract cell of sp1 and cell of sp2
+    #   comm.df$sp1 <- sub("\\-.*", "", comm.df$Var1)
+    #   comm.df$cell1 <- sub(".*-", "", comm.df$Var1)
+    #   comm.df$sp2 <- sub("\\-.*", "", comm.df$Var2)
+    #   comm.df$cell2 <- sub(".*-", "", comm.df$Var2)
+    #   
+    #   comm.df$scaled.binary.communicability <- range01(comm.df$binary.communicability)
+    #   
+    #   # this should be valid because the two matrices have the same dimensions and names
+    #   dfw <- reshape2::melt(communicability.matrices[[2]],
+    #                         value.name = "weighted.communicability")
+    #   comm.df$weighted.communicability <- dfw$weighted.communicability
+    #   
+    #   # -------------------------------------------------------------------------
+    #   # get path lengths as well
+    #   graph.D <- igraph::graph_from_adjacency_matrix(adjmatrix = remaining.landscape,
+    #                                                  mode = "undirected",
+    #                                                  weighted = "1",diag = FALSE)
+    #   # this takes ~10min
+    #   path.lengths <- igraph::distances(graph = graph.D,algorithm = "unweighted")
+    #   
+    #   # turning it to df is quick
+    #   df.path.lengths <- reshape2::melt(path.lengths,value.name = "shortest.path.length")
+    #   
+    #   df.path.lengths$sp1 <- sub("\\-.*", "", df.path.lengths$Var1)
+    #   df.path.lengths$cell1 <- sub(".*-", "", df.path.lengths$Var1)
+    #   df.path.lengths$sp2 <- sub("\\-.*", "", df.path.lengths$Var2)
+    #   df.path.lengths$cell2 <- sub(".*-", "", df.path.lengths$Var2) 
+    #   
+    #   comm.df$Var1 <- NULL
+    #   comm.df$Var2 <- NULL
+    #   
+    #   df.path.lengths$Var1 <- NULL
+    #   df.path.lengths$Var2 <- NULL
+    #   
+    #   # sp1,cell1,sp2,cell2 should be common
+    #   comm.df <- left_join(comm.df,df.path.lengths)
+    #   
+    #   # -------------------------------------------------------------------------
+    #   # get spatial distance between cells
+    #   comm.df <- left_join(comm.df,cell.distances,by = c("cell1" = "cell_from",
+    #                                                      "cell2" = "cell_to"))
+    #   
+    #   comm.df <- comm.df[,c("sp1","cell1",
+    #                         "sp2","cell2","binary.communicability",
+    #                         "scaled.binary.communicability",
+    #                         "weighted.communicability",
+    #                         "shortest.path.length",
+    #                         "distance")]
+    #   comm.df$extinction_sequence <- extinction.tests[i.test]
+    #   comm.df$species_removed <- num.sp - remaining.sp
+    #   
+    #   # -------------------------------------------------------------------------
+    #   # global communication efficiency - a network level property
+    #   
+    #   landscape.graph <- igraph::graph_from_adjacency_matrix(remaining.landscape,
+    #                                                          weighted = T)
+    #   landscape.gce <- GCE_weighted(g = landscape.graph,normalised = T,
+    #                                 directed = T)
+    #   
+    #   # -------------------------------------------------------------------------
+    #   
+    #   gce.list[[length(gce.list)+1]] <- data.frame(extinction_sequence = extinction.tests[i.test],
+    #                                                species_removed = num.sp - remaining.sp,
+    #                                                normalised.gce = landscape.gce$normalised) 
+    #   
+    #   # -------------------------------------------------------------------------
+    #   
+    #   save(comm.df, file = paste(comm.path,"/comm_",
+    #                              extinction.tests[i.test],"_",
+    #                              num.sp-remaining.sp,"removed.RData",sep=""))
+    # }else{
+    #   # artificially set the flag so that the while loop ends
+    #   remaining.sp <- 1
+    # }
+  }# while remaining.sp
+  
+  cat(extinction.tests[i.test],"- completed\n")
+  
+}# for i.test
 
-# list holding presences per cell
-presence.df <- list()
+# gce.df <- bind_rows(gce.list)
 
-for(i.row in 1:landscape.rows){
-  for(i.col in 1:landscape.cols){
-    
-    # "reload" the metaweb for this replicate
-    my.network <- sim.matrices[[i.net]][[i.rep]]
-    
-    # cells are referred to by its row and col numbers, but I need
-    # a cell number for the block matrix (see below)
-    cell.id <- (landscape.cols * (i.row - 1)) + i.col
-    
-    # suitability value of this cell
-    landscape.value <- landscape.list[[i.land]][[i.rep]][i.row,i.col]
-    
-    # id of this cell
-    cell.value <- cell.coords$cell[which(cell.coords$x == i.col &
-                                           cell.coords$y == i.row)]
-    
-    # presence dataframe for this cell
-    cell.df <- tidyr::expand_grid(landscape.category = landscape.categories[i.land],
-                                  network.category = network.categories[i.net],
-                                  replicate = i.rep,
-                                  landscape.row = i.row,
-                                  landscape.col = i.col,
-                                  cell = cell.value,
-                                  sp = sp.names,
-                                  presence = FALSE)
-    
-    # go through all sp, checking if it should be present in this cell
-    # and update the df and network matrix of the cell
-    
-    # a species is present if the suitability value of the cell
-    # is within its mean +- sd 
-    
-    for(i.sp in 1:num.sp){
-      my.suit <- which(suit.df$sp == sp.names[i.sp])
-      min.suit <- suit.df$optimum[my.suit] - suit.df$sd[my.suit]
-      max.suit <- suit.df$optimum[my.suit] + suit.df$sd[my.suit]
-      
-      if(landscape.value >= min.suit & landscape.value <= max.suit){
-        cell.df$presence[i.sp] <- TRUE
-      }else{
-        # if species not present, "prune" the matrix, setting the species'
-        # elements to 0
-        
-        my.network[sp.names[i.sp],] <- 0
-        my.network[,sp.names[i.sp]] <- 0
-        
-      }
-    }# for i.sp
-    presence.df[[length(presence.df)+1]] <- cell.df
-    
-    # now, add the cell network to the landscape matrix
-    init.row <- 1 + (num.sp * (cell.id - 1))
-    init.col <- init.row
-    end.row <- num.sp + (num.sp * (cell.id - 1))
-    end.col <- end.row
-    
-    my.landscape.matrix[init.row:end.row,init.col:end.col] <- my.network
-    
-  }# i.col
-}# i.row
+# write.csv2(gce.df,file = paste(gce.path,"/gce_extinction_sequences.csv",sep=""))
 
-
-
-
-
+net.df <- bind_rows(net.list)
+write.csv2(net.df,file = paste(gce.path,"/network_properties_extinction_sequences.csv",sep=""))

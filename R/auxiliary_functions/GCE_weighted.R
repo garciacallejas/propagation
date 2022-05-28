@@ -71,8 +71,12 @@
 #' karate <- make_graph("zachary")
 #' GCE(karate, directed = F)
 #' @export
-GCE_weighted <- function(g, directed = FALSE, normalised = TRUE, weights = NULL,
-                lengths = NULL, verbose = TRUE) {
+GCE_weighted <- function(g, 
+                         directed = FALSE, 
+                         normalised = TRUE, 
+                         weights = NULL,
+                         lengths = NULL, 
+                         verbose = TRUE) {
   # create return object
   res <- list(
     "non_normalised" = NULL,
@@ -157,6 +161,7 @@ GCE_weighted <- function(g, directed = FALSE, normalised = TRUE, weights = NULL,
     # g <- igraph::set_edge_attr(g, name = "length", value = 1)
     # g <- igraph::set_edge_attr(g, name = "length_inv", value = 1)
   }
+  
   # Check for multiedges and loops
   if (!igraph::is.simple(g)) {
     cat("graph is not simple. Aggrgating multiedges (sum of weights, min of lengths),
@@ -198,7 +203,9 @@ GCE_weighted <- function(g, directed = FALSE, normalised = TRUE, weights = NULL,
           "weight" = "sum")
           # "length" = "min_na_rm")
         )
-        igraph::E(g)$weight_inv <- 1. / igraph::E(g)$weight
+        g <- igraph::set_edge_attr(g, name = "weight_inv",
+                                   value = (1. / igraph::E(g)$weight))
+        # igraph::E(g)$weight_inv <- 1. / igraph::E(g)$weight
         # igraph::E(g)$length_inv <- 1. / igraph::E(g)$length
 
       # }

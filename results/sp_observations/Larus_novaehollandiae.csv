@@ -1,30 +1,7 @@
-"grid_id";"species";"year";"gbifID";"lat";"lon"
-4;"Chroicocephalus novaehollandiae";2012;"2442897720";-46,448059;169,816788
-18;"Chroicocephalus novaehollandiae";NA;"1698806349";-45,125557;170,968063
-46;"Chroicocephalus novaehollandiae";NA;"863347893";-43,511426;172,610674
-46;"Chroicocephalus novaehollandiae";NA;"863362073";-43,511426;172,610674
-60;"Chroicocephalus novaehollandiae";2012;"2442911627";-42,409771;173,683548
-89;"Chroicocephalus novaehollandiae";1899;"1268731169";-39,788972;176,849778
-89;"Chroicocephalus novaehollandiae";1893;"1268732232";-39,988833;176,548139
-114;"Chroicocephalus novaehollandiae";1947;"1268729599";-38,136861;176,24975
-114;"Chroicocephalus novaehollandiae";1945;"1268725111";-38,136861;176,24975
-114;"Chroicocephalus novaehollandiae";NA;"1268724085";-38,136861;176,24975
-126;"Chroicocephalus novaehollandiae";2002;"1268736040";-36,84846;174,763332
-126;"Chroicocephalus novaehollandiae";1997;"1268737375";-37,107528;175,298194
-126;"Chroicocephalus novaehollandiae";1990;"1268732384";-36,859667;174,774639
-126;"Chroicocephalus novaehollandiae";1989;"1268725303";-36,787917;174,768833
-126;"Chroicocephalus novaehollandiae";1989;"1268731891";-36,787917;174,768833
-126;"Chroicocephalus novaehollandiae";1984;"1268726759";-36,859389;174,765222
-126;"Chroicocephalus novaehollandiae";1951;"1268728553";-36,857056;174,773583
-126;"Chroicocephalus novaehollandiae";1950;"1268725761";-36,859667;174,774639
-126;"Chroicocephalus novaehollandiae";1941;"1268729196";-36,854056;174,779889
-126;"Chroicocephalus novaehollandiae";1941;"1268729217";-36,857056;174,773583
-126;"Chroicocephalus novaehollandiae";1932;"1268726796";-36,857472;174,810194
-126;"Chroicocephalus novaehollandiae";1887;"1268733184";-36,848472;174,763333
-126;"Chroicocephalus novaehollandiae";NA;"1268723777";-36,859667;174,774639
-126;"Chroicocephalus novaehollandiae";NA;"1268724949";-36,854056;174,779889
-126;"Chroicocephalus novaehollandiae";NA;"1268725154";-36,857056;174,773583
-126;"Chroicocephalus novaehollandiae";NA;"1268728013";-36,877528;174,76425
-126;"Chroicocephalus novaehollandiae";NA;"1268735422";-37,110806;175,296528
-126;"Chroicocephalus novaehollandiae";NA;"1268737969";-36,968639;174,793694
-151;"Chroicocephalus novaehollandiae";2015;"2442863908";-35,267185;174,074615
+"protocol";"basisOfRecord";"species";"decimalLongitude";"decimalLatitude";"coordinateUncertaintyInMeters";"year";"countryCode";"institutionCode";"gbifID"
+"BIOCASE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";174,907837;-40,863678;250;2016;"NZL";"naturgucker";"1338889119"
+"BIOCASE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";174,074615;-35,267185;250;2015;"NZL";"naturgucker";"2442863908"
+"DWC_ARCHIVE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";175,823307;-36,605484;30;2013;"NZL";"Dragonfly Data Sciences";"1912781410"
+"BIOCASE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";168,128937;-46,931511;250;2012;"NZL";"naturgucker";"2442769822"
+"BIOCASE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";169,816788;-46,448059;250;2012;"NZL";"naturgucker";"2442897720"
+"BIOCASE";"HUMAN_OBSERVATION";"Chroicocephalus novaehollandiae";173,683548;-42,409771;250;2012;"NZL";"naturgucker";"2442911627"
