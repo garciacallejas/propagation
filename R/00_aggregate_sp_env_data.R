@@ -24,32 +24,63 @@ NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
 grid.size <- 100000
 
 # where are species observations
-sp.path <- "results/sp_observations/"
+sp.path <- "results/sp_observations"
 
 # where are environmental rasters
 env.path <- "../datasets/NZEnvDS_NZMG/"
 
+# NZ grid
+NZ_grid <- st_read(paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""))
+
 # -------------------------------------------------------------------------
 
-# sp.files <- list.files(path = sp.path, 
-#                        pattern = paste(grid.size/1e3,"km",sep=""),
-#                        full.names = T)
-# 
-# # -------------------------------------------------------------------------
-# 
-# tidy.obs <- list()
-# 
-# for(i.sp in 1:length(sp.files)){
-#   
-#   my.file <- read.csv2(sp.files[i.sp])
-#   
-#   tidy.obs[[i.sp]] <- my.file %>%
-#     group_by(species,cell_id) %>%
-#     summarise(observations = n())
-#   
-# }
-# 
-# obs.df <- bind_rows(tidy.obs)
+sp.files <- list.files(path = sp.path,
+                       pattern = ".csv",
+                       full.names = T)
+
+# -------------------------------------------------------------------------
+
+tidy.obs <- list()
+
+for(i.sp in 1:length(sp.files)){
+
+  my.file <- read.csv2(sp.files[i.sp])
+
+  # first, set the crs of the original data
+  projcrs <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  obs <- st_as_sf(x = my.file,
+                  coords = c("decimalLongitude", "decimalLatitude"),
+                  crs = projcrs)
+
+  # then, transform to NZMG
+  obs.nz <- st_transform(obs, crs= st_crs(27200))
+  observations_id <- st_intersection(obs.nz,NZ_grid)
+
+  # convert to standard dataframe
+  obs_id_df <- observations_id[,c("cell_id","species","year","geometry","gbifID",
+                                  "protocol","institutionCode")] %>%
+    mutate(lat = sf::st_coordinates(.)[,2],
+           lon = sf::st_coordinates(.)[,1],
+           crs = "NZMG") %>%
+    sf::st_set_geometry(NULL)
+  
+  tidy.obs[[i.sp]] <- obs_id_df %>%
+    group_by(species,cell_id) %>%
+    summarise(observations = n()) %>%
+    select(cell_id, species, observations)
+
+}
+
+obs.df <- bind_rows(tidy.obs) %>%
+  arrange(cell_id, species) 
+obs.df.wide <- obs.df %>% pivot_wider(names_from = cell_id,
+                                      values_from = observations, values_fill = 0) %>%
+  arrange(species)
+
+# -------------------------------------------------------------------------
+# write to disk
+
+write.csv2(obs.df.wide, paste("results/sp_observations_",grid.size/1e3,"km.csv",sep=""),row.names = F)
 
 # -------------------------------------------------------------------------
 
@@ -92,12 +123,9 @@ for(i.file in 1:length(env.files)){
 
 env.df <- purrr::reduce(env.list,dplyr::left_join)
 
-
 # -------------------------------------------------------------------------
 
-write.csv2(env.df,"results/environmental_factors_100km.csv")
-
-
+write.csv2(env.df,paste("results/environmental_factors_",grid.size/1e3,"km.csv",sep=""),row.names = F)
 
 # -------------------------------------------------------------------------
 # test changed resolution
@@ -110,8 +138,8 @@ write.csv2(env.df,"results/environmental_factors_100km.csv")
 ggplot() +
   geom_sf(data = NZ2, fill = 'white', lwd = 0.05) +
   # geom_sf(data = env.sf,aes(color = humidity_meanAnn)) +
-  # geom_sf(data = grid, fill = 'transparent', lwd = 0.3) +
-  geom_sf(data = env.grid, aes(fill = humidity_meanAnn), lwd = 0.3) +
+  geom_sf(data = grid, fill = 'transparent', lwd = 0.3) +
+  # geom_sf(data = env.grid, aes(fill = humidity_meanAnn), lwd = 0.3) +
 
   # geom_text(data = grid_with_labels,
   #           aes(x = X, y = Y, label = cell_id),
@@ -120,11 +148,3 @@ ggplot() +
   coord_sf(datum = NA)  +
   labs(x = "") +
   labs(y = "")
-
-
-# -------------------------------------------------------------------------
-# write to disk
-
-# write.csv2(obs.df, paste("results/sp_observations_",grid.size/1e3,"km.csv",sep=""))
-
-
