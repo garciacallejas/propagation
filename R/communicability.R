@@ -12,7 +12,7 @@
 #' @export
 #'
 #' @examples
-communicability <- function(A){
+communicability <- function(A, binary = TRUE, weighted = TRUE){
   
   range01 <- function(x){(x-min(x))/(max(x)-min(x))}
   
@@ -22,17 +22,24 @@ communicability <- function(A){
     # binary
     # beware, it takes a while for a 200M elements matrix - RAM is a limiting factor
     binary.comm.matrix <- expm::expm(A)
-    weighted.comm.matrix <- 0
+    weighted.comm.matrix <- NA
   }else{
     # binary and weighted
-    binary.matrix <- ifelse(A != 0, 1, 0)
-    binary.comm.matrix <- expm::expm(binary.matrix)
+    if(binary){
+      binary.matrix <- ifelse(A != 0, 1, 0)
+      binary.comm.matrix <- expm::expm(binary.matrix)
+    }else{
+      binary.comm.matrix <- NA
+    }
     # TODO consider weighting these elements by community size
     
     # weighted
-    
-    scaled.comm.matrix <- range01(A)
-    weighted.comm.matrix <- expm::expm(scaled.comm.matrix)
+    if(weighted){
+      scaled.comm.matrix <- range01(A)
+      weighted.comm.matrix <- expm::expm(scaled.comm.matrix)
+    }else{
+      weighted.comm.matrix <- NA
+    }
     
     # below, a previous approach, from Crofts and Higham 2009
     # not used because simply exponentiating the weighted matrix gives 
