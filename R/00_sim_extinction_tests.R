@@ -36,10 +36,12 @@ dispersal.cat <- "dk03"
 # -------------------------------------------------------------------------
 # random, targeted_dispersal, targeted_degree, targeted_distribution
 
-extinction.tests <- c("targeted_distribution","targeted_degree",
-                      "targeted_dispersal")
+extinction.tests <- c("targeted_distribution",
+                      "targeted_degree",
+                      "targeted_dispersal",
+                      "random")
 # extinction.tests <- "random"
-random.replicates <- 10
+random.replicates <- 100
 
 # -------------------------------------------------------------------------
 
@@ -77,7 +79,7 @@ for(i.test in 1:length(non.random.tests)){
   remaining.sp.traits <- sp.traits
   remaining.landscape <- landscape
   
-  while(remaining.sp > 2){
+  while(remaining.sp > 3){
     
     # index of the sp to remove
     # if(non.random.tests[i.test] == "random"){
@@ -180,10 +182,10 @@ for(i.test in 1:length(non.random.tests)){
 }# for i.test
 
 metrics.df <- bind_rows(net.metrics.list)
-# write.csv2(gce.df,file = paste(gce.path,"/gce_extinction_sequences.csv",sep=""))
+write.csv2(metrics.df,file = paste(gce.path,"/metrics_extinction_sequences.csv",sep=""),row.names = F)
 # 
-# net.df <- bind_rows(net.list)
-# write.csv2(net.df,file = paste(gce.path,"/network_properties_extinction_sequences.csv",sep=""))
+net.df <- bind_rows(net.list)
+write.csv2(net.df,file = paste(gce.path,"/network_properties_extinction_sequences.csv",sep=""),row.names = F)
 
 }# non.random.tests
 

@@ -17,8 +17,8 @@ grid.size <- 100000 # 100km
 
 # -------------------------------------------------------------------------
 
-# transform to NZMG projection (https://epsg.io/27200)
-NZ2 <- st_transform(NZ, crs= st_crs(27200))
+# transform to NZTM2000 projection (https://epsg.io/2193)
+NZ2 <- st_transform(NZ, crs= st_crs(2193))
 # st_crs(NZ2)$proj4string
 # st_crs(NZ2)$units_gdal
 
@@ -40,8 +40,8 @@ grid_with_labels <- st_centroid(grid) %>% cbind(st_coordinates(.))
 #   geom_sf(data = NZ2, fill = 'white', lwd = 0.05) +
 #   # geom_sf(data = pts, color = 'red', size = 1.7) +
 #   geom_sf(data = grid, fill = 'transparent', lwd = 0.3) +
-#   geom_text(data = grid_with_labels, 
-#             aes(x = X, y = Y, label = cell_id), 
+#   geom_text(data = grid_with_labels,
+#             aes(x = X, y = Y, label = cell_id),
 #             size = 2) +
 #   coord_sf(datum = NA)  +
 #   labs(x = "") +
@@ -50,8 +50,8 @@ grid_with_labels <- st_centroid(grid) %>% cbind(st_coordinates(.))
 
 # -------------------------------------------------------------------------
 
-st_write(grid_with_labels,paste("data/NZ_grid_",grid.size/1e3,"km.csv",sep=""))
-st_write(grid,paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""))
+st_write(grid_with_labels,paste("data/NZ_grid_",grid.size/1e3,"km.csv",sep=""),append = F)
+st_write(grid,paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""),append = F)
 
 # -------------------------------------------------------------------------
 

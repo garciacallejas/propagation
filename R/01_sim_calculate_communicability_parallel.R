@@ -14,7 +14,7 @@
 # -------------------------------------------------------------------------
 read.sim.landscape.path <- "/home/david/Work/datasets/NZ/results/sim_landscape_matrices/"
 save.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/"
-save.gce.path <- "/home/david/Work/datasets/NZ/results/gce/GCE_"
+save.net.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/network_level/"
 
 # -------------------------------------------------------------------------
 
@@ -23,12 +23,12 @@ library(doParallel)
 
 library(tidyverse)
 library(igraph) # for path lenghts
-source("R/communicability.R")
-range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+source("R/auxiliary_functions/comm.R")
+# range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # set number of cores -----------------------------------------------------
 
-workers <- 6
+workers <- 3
 cl <- makeCluster(workers)
 # register the cluster for using foreach
 registerDoParallel(cl)
@@ -61,16 +61,22 @@ id <- expand.grid(network.categories,landscape.categories,
                   dispersal.categories,1:replicates)
 id.char <- sort(paste(id[,1],"_",id[,2],"_",id[,3],"_",id[,4],sep=""))
 
+# test
+# i.id <- 256
+
 # -------------------------------------------------------------------------
 # iterate through each generated landscape 
 
 results <- foreach(i.id = 1:length(id.char), 
                    # .combine=comb.fun, 
-                   .packages = c('tidyverse',"igraph",
-                                 "intsegration","reshape2")) %dopar% 
+                   .packages = c('tidyverse',
+                                 "igraph",
+                                 # "intsegration",
+                                 "reshape2")) %dopar% 
   {
     
-    source("R/auxiliary_functions/GCE_weighted.R")
+    source("R/communicability.R")
+    source("R/auxiliary_functions/comm.R")
     
     # recover landscape,network, and replicate from the ID
     # i.land <- sub(".*_", "", id.char[i.id])
@@ -93,10 +99,12 @@ results <- foreach(i.id = 1:length(id.char),
                         richness,"sp_",cells,"cells.RData",sep="")
     load(my.landscape.name)
     
-    communicability.matrices <- communicability(landscape) 
+    communicability.metrics <- comm(landscape,
+                                    normalised = FALSE,
+                                    return.pairwise.comm = T) 
     
     # tidy functions only work with dataframes, but this still works, and is fast
-    comm.df <- reshape2::melt(communicability.matrices[[1]],
+    comm.df <- reshape2::melt(communicability.metrics[[2]],
                               value.name = "binary.communicability")
     
     # extract cell of sp1 and cell of sp2
@@ -105,10 +113,10 @@ results <- foreach(i.id = 1:length(id.char),
     comm.df$sp2 <- sub("\\-.*", "", comm.df$Var2)
     comm.df$cell2 <- sub(".*-", "", comm.df$Var2)
     
-    comm.df$scaled.binary.communicability <- range01(comm.df$binary.communicability)
+    comm.df$scaled.binary.communicability <- scales::rescale(comm.df$binary.communicability,to = c(0,1))
     
     # this should be valid because the two matrices have the same dimensions and names
-    dfw <- reshape2::melt(communicability.matrices[[2]],
+    dfw <- reshape2::melt(communicability.metrics[[3]],
                           value.name = "weighted.communicability")
     comm.df$weighted.communicability <- dfw$weighted.communicability
     
@@ -153,26 +161,26 @@ results <- foreach(i.id = 1:length(id.char),
     # -------------------------------------------------------------------------
     # global communication efficiency - a network level property
     
-    landscape.graph <- igraph::graph_from_adjacency_matrix(landscape,
-                                                           weighted = T)
-    landscape.gce <- GCE_weighted(g = landscape.graph,normalised = T,
-                                  directed = T)
+    # landscape.graph <- igraph::graph_from_adjacency_matrix(landscape,
+    #                                                        weighted = T)
+    # landscape.gce <- GCE_weighted(g = landscape.graph,normalised = T,
+    #                               directed = T)
 
 # -------------------------------------------------------------------------
-    net.gce <- data.frame(landscape.category = landscape.categories[i.land],
+    net.comm <- data.frame(landscape.category = landscape.categories[i.land],
                           network.category = network.categories[i.net],
                           dispersal.category = dispersal.categories[i.disp],
                           replicate = i.rep,
-                          normalised.gce = landscape.gce$normalised)
+                          normalised.communicability = communicability.metrics[[1]])
     
 # -------------------------------------------------------------------------
 
-    write.csv2(net.gce,paste(save.gce.path,
+    write.csv2(net.comm,paste(save.net.comm.path,
                              network.categories[i.net],"_",
                              landscape.categories[i.land],"_",
                              dispersal.categories[i.disp],"_",
                              "re",i.rep,"_",
-                             richness,"sp_",cells,"cells.csv",sep=""))
+                             richness,"sp_",cells,"cells.csv",sep=""),row.names = F)
     save(comm.df, file = my.df.name)
     
   }# foreach id.char
@@ -181,6 +189,6 @@ stopCluster(cl)
 
 # -------------------------------------------------------------------------
 
-gce.df <- list.files("/home/david/Work/datasets/NZ/results/gce",full.names = T) %>% map_dfr(read.csv2)
-gce.df$X <- NULL
-write.csv2(gce.df,"results/sim_GCE.csv",row.names = F)
+netcom.df <- list.files("/home/david/Work/datasets/NZ/results/communicability/network_level/",full.names = T) %>% map_dfr(read.csv2)
+netcom.df$X <- NULL
+write.csv2(netcom.df,"results/sim_network_level_communicability.csv",row.names = F)

@@ -41,8 +41,10 @@ sp.list <- str_replace(sp.list,"_"," ")
 # with observations (e.g. there are "Pseudopanax sp" and "Pseudopanax arboreus", etc)
 # so it is not feasible to simply dump together all species in the "sp" observations.
 # For now, remove them.
-genus <- grep(" sp",sp.list)
-sp.list <- sp.list[-genus]
+# genus <- grep(" sp",sp.list)
+g2 <- endsWith(sp.list,"sp")
+
+sp.list <- sp.list[-g2]
 
 # simplify subspecies/varieties
 sp.list <- sort(unique(gsub("\\_.*","",sp.list)))

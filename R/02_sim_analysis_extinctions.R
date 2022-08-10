@@ -10,6 +10,31 @@ library(patchwork)
 
 # -------------------------------------------------------------------------
 
+metrics.df <- read.csv2("results/extinction_sequences/metrics_extinction_sequences.csv")
+
+# -------------------------------------------------------------------------
+
+metrics.df.2 <- subset(metrics.df, metric %in% c("weighted_communicability_mean",
+                                                 "shortest_path_length_mean",
+                                                 "normalised_gce"))
+
+test.plot <- ggplot(metrics.df.2, aes(x = species_removed, y = sp.contribution)) + 
+  geom_point(aes(color = extinction_sequence)) + 
+  geom_line(aes(group = extinction_sequence, color = extinction_sequence)) +
+  facet_grid(metric~., scales = "free_y") +
+  theme_bw() +
+  NULL
+test.plot
+
+
+metrics.raw <- ggplot(metrics.df.2, aes(x = species_removed, y = value)) + 
+  geom_line(aes(group = extinction_sequence, color = extinction_sequence)) + 
+  facet_grid(metric~., scales = "free_y") + 
+  theme_bw() +
+  NULL
+metrics.raw
+
+
 # param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
 # 
 # network.categories <- read.csv2("results/network_gradient_categories.csv")
