@@ -12,7 +12,7 @@
 # - cell coordinates and distances: "results/cell_coordinates.csv","results/cell_distances.csv"
 
 # OUTPUTS
-# - andscape matrices with dispersal, each stored individually
+# - landscape matrices with dispersal, each stored individually
 # results/sim_landscape_matrices/NETWORK_LANDSCAPE_DISPERSAL_REPLICATE_RICHNESS_CELLS.RData
 # - dataframe with combinations of categories
 # "results/landscapes_info.csv"

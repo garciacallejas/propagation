@@ -28,6 +28,13 @@ cell.distances$cell_to <- as.character(cell.distances$cell_to)
 
 netcom.df <- read.csv2("results/sim_network_level_communicability.csv")
 
+# to assign species-level metrics: degree and dispersal distances
+local.networks <- read.csv2("results/sim_degree_dist_networks.csv")
+local.dispersal <- read.csv2("results/dispersal_kernels.csv")
+
+# species presences/absences
+load("results/presence_dataframes.RData")
+
 # -------------------------------------------------------------------------
 # recover factors
 
@@ -53,6 +60,90 @@ disp.dist <- ggplot(netcom.df, aes(x = scaled.communicability, y = dispersal.cat
 
 m1 <- lm(scaled.communicability ~ landscape.category + network.category + dispersal.category, 
          data = netcom.df)
+
+# -------------------------------------------------------------------------
+# node-level analyses
+
+comm.files <- list.files("/home/david/Work/datasets/NZ/results/communicability",
+                         pattern = "RData",full.names = T)
+comm.file.names <- list.files("/home/david/Work/datasets/NZ/results/communicability",
+                              pattern = "RData",full.names = F)
+# load(my.files[1])
+# sample.perc <- .05
+# n.models <- 100
+species.data.list <- list()
+
+# in case we want to sample only a few files instead of the whole set
+# for fast testing, for example
+n.files <- length(comm.files)
+
+s <- sample(1:length(comm.files),n.files)
+my.files <- comm.files[s]
+my.file.names <- comm.file.names[s]
+
+for(j in 1:length(my.files)){
+  
+  # get factor info
+  my.net.cat <- substr(my.file.names[j],6,9)
+  my.landscape.cat <- substr(my.file.names[j],11,14)
+  my.dispersal.cat <- substr(my.file.names[j],16,19)
+  
+  my.replicate <- substr(my.file.names[j],23,24)
+  if(grepl("_",my.replicate)){
+    my.replicate <- substr(my.replicate,1,1)
+  }
+  my.replicate <- as.numeric(my.replicate)
+  
+  # number of presences in the grid for each species
+  my.presence.df <- sp.presence[[my.landscape.cat]][[my.net.cat]][[my.replicate]]
+  my.sp.presences <- my.presence.df %>% 
+    group_by(sp) %>%
+    summarise(presences = sum(presence))
+  
+  my.sp.dispersal <- local.dispersal %>% 
+    filter(replicate == my.replicate &
+             dispersal.category == my.dispersal.cat) %>%
+    select(sp,dispersal.distance)
+  
+  my.sp.degree <- local.networks %>%
+    filter(generative.model == my.net.cat & replicate == my.replicate) %>%
+    group_by(node_from) %>%
+    summarise(degree = sum(value != 0))
+  names(my.sp.degree)[1] <- "sp"
+  
+  my.sp.metrics <- left_join(my.sp.degree,left_join(my.sp.dispersal,my.sp.presences))
+  
+  # get communicability
+  load(my.files[j])
+  
+  # subset
+  valid.pairs <- subset(comm.df, sp1 != sp2 & weighted.communicability != 0)
+  
+  # aggregate per species
+  my.sp.data <- valid.pairs %>% group_by(sp1) %>%
+    summarise(wc = sum(weighted.communicability),bc = sum(binary.communicability)) %>%
+    mutate(network.category = my.net.cat,
+           landscape.category = my.landscape.cat,
+           dispersal.category = my.dispersal.cat)
+  names(my.sp.data)[1] <- "sp"
+  
+  species.data.list[[length(species.data.list)+1]] <- left_join(my.sp.data,my.sp.metrics)
+  
+}# for j (each file)
+
+species.data.df <- bind_rows(species.data.list)
+write.csv2(species.data.df,"results/sim_species_level_communicability_TEMP.csv")
+
+# -------------------------------------------------------------------------
+sp.data.scaled <- species.data.df %>%
+  mutate(across(degree:presences,scales::rescale)) %>%
+  select(sp,wc,bc,degree:presences)
+
+# TODO improve
+m.sp <- lm(log(wc) ~ degree + 
+             dispersal.distance + 
+             presences, data = sp.data.scaled)
+summary(m.sp)
 
 # -------------------------------------------------------------------------
 # OLD CODE BELOW
@@ -132,21 +223,21 @@ m1 <- lm(scaled.communicability ~ landscape.category + network.category + disper
 #     theme_bw() +
 #     # ylim(c(0,1)) +
 #     NULL
-  
-  # plot.means.land <- ggplot(result.means) +
-  #   geom_point(aes(x = landscape.category, y = mean.wc, fill = network.category), shape = 21) + 
-  #   geom_errorbar(aes(x = landscape.category, ymin = mean.wc - sd.wc, ymax = mean.wc + sd.wc)) + 
-  #   facet_grid(network.category~dispersal.category)+
-  #   theme_bw() + 
-  #   NULL
-  # 
-  # plot.means.net <- ggplot(result.means) +
-  #   geom_point(aes(x = network.category, y = mean.wc, fill = landscape.category), shape = 21) + 
-  #   geom_errorbar(aes(x = network.category, ymin = mean.wc - sd.wc, ymax = mean.wc + sd.wc)) + 
-  #   facet_grid(landscape.category~dispersal.category)+
-  #   theme_bw() + 
-  #   NULL
-  
+
+# plot.means.land <- ggplot(result.means) +
+#   geom_point(aes(x = landscape.category, y = mean.wc, fill = network.category), shape = 21) + 
+#   geom_errorbar(aes(x = landscape.category, ymin = mean.wc - sd.wc, ymax = mean.wc + sd.wc)) + 
+#   facet_grid(network.category~dispersal.category)+
+#   theme_bw() + 
+#   NULL
+# 
+# plot.means.net <- ggplot(result.means) +
+#   geom_point(aes(x = network.category, y = mean.wc, fill = landscape.category), shape = 21) + 
+#   geom_errorbar(aes(x = network.category, ymin = mean.wc - sd.wc, ymax = mean.wc + sd.wc)) + 
+#   facet_grid(landscape.category~dispersal.category)+
+#   theme_bw() + 
+#   NULL
+
 # plot.land <- ggplot(result.df,aes(x = landscape.category,y = wc)) + 
 #   geom_boxplot(aes(fill = network.category)) + 
 #   theme_bw() +
@@ -159,8 +250,8 @@ m1 <- lm(scaled.communicability ~ landscape.category + network.category + disper
 #   ylim(c(0,1)) +
 #   NULL
 
-  
-  
-  
-  
+
+
+
+
 
