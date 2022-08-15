@@ -1,6 +1,8 @@
 
 #' communicability at the network level
 #'
+#' needs the intsegration package (https://github.com/gbertagnolli/intsegration)
+#'
 #' @param A 
 #' @param weighted 
 #' @param structural.zeros 
@@ -15,7 +17,7 @@ comm <- function(A,
                  structural.zeros = NULL, 
                  return.pairwise.comm = FALSE){
   
-  N <- nrow(A)
+    N <- nrow(A)
   
   # ensure diagonals are set to zero
   diag(A) <- 0
@@ -34,10 +36,18 @@ comm <- function(A,
   
   # calculate the "ideal" network as a baseline
   if(normalised){
-    # this is simpler
-    phi.A <- maotai::shortestpath(A)
+    
+    inv.A <- 1/A
+    #this works
+    inv.A[is.infinite(inv.A)] <- .Machine$double.xmax
+    all.shortest.paths <- intsegration::rcpp_floyd_flow(inv.A)
+    #flows
+    phi.A <- all.shortest.paths$F
+
+    # this is wrong
+    # phi.A <- maotai::shortestpath(A)
     # for numerical convergence
-    phi.A[is.infinite(phi.A)] <- .Machine$double.xmax
+    # phi.A[is.infinite(phi.A)] <- .Machine$double.xmax
     
     # structural zeros
     if(!is.null(structural.zeros)){
@@ -46,6 +56,10 @@ comm <- function(A,
     
     # diagonal must be zero as well, check just in case
     diag(phi.A) <- 0
+    
+    # and for numerical rounding, assing zeros to extremely low values
+    # since there are spurious
+    phi.A[phi.A < 1e-10] <- 0
     
     # communicability of the "ideal" matrix
     comm.phi <- communicability(phi.A)
@@ -59,16 +73,18 @@ comm <- function(A,
       comm_ideal <- 1. / N / (N - 1) * sum(bin.comm.phi, na.rm = T)
     }
   }else{
-    comm_ideal <- 1
+    comm_ideal <- NA
   }
   
   if(return.pairwise.comm){
-    return(list(network.comm = comm_obs/comm_ideal,
+    return(list(raw.comm = comm_obs,
+                max.comm = comm_ideal,
                 bin.pairwise.comm = bin.comm,
                 weighted.pairwise.comm = w.comm))
   }else{
     # return the ratio, or the raw value
-    return(comm_obs/comm_ideal)
+    return(list(raw.comm = comm_obs,
+                max.comm = comm_ideal))
   }
 
   
@@ -78,8 +94,8 @@ comm <- function(A,
 # from bertagnolli (package "intsegration")
 # it is a bit more difficult to follow, I think
 # inv.A <- 1/A
-# # this works
+# #this works
 # inv.A[is.infinite(inv.A)] <- .Machine$double.xmax
 # all.shortest.pahts <- intsegration::rcpp_floyd_flow(inv.A)
-# # flows
-# phi.A <- all.shortest.pahts$F
+# #flows
+# phi.A2 <- all.shortest.pahts$F

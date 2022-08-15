@@ -28,7 +28,7 @@ source("R/auxiliary_functions/comm.R")
 
 # set number of cores -----------------------------------------------------
 
-workers <- 3
+workers <- 8
 cl <- makeCluster(workers)
 # register the cluster for using foreach
 registerDoParallel(cl)
@@ -61,9 +61,14 @@ id <- expand.grid(network.categories,landscape.categories,
                   dispersal.categories,1:replicates)
 id.char <- sort(paste(id[,1],"_",id[,2],"_",id[,3],"_",id[,4],sep=""))
 
+# net.files <- list.files("/home/david/Work/datasets/NZ/results/communicability/network_level/",full.names = F)
+# net.files.2 <- substr(net.files,1,nchar(net.files)-18)
+# str_sub(net.files.2,16,17) <- ""
+# id.char <- id.char[which(!id.char %in% net.files.2)]
+
 # test
 # i.id <- 256
-
+# id.char <- id.char[1:10]
 # -------------------------------------------------------------------------
 # iterate through each generated landscape 
 
@@ -100,11 +105,12 @@ results <- foreach(i.id = 1:length(id.char),
     load(my.landscape.name)
     
     communicability.metrics <- comm(landscape,
-                                    normalised = FALSE,
+                                    normalised = TRUE,
+                                    weighted = TRUE,
                                     return.pairwise.comm = T) 
     
     # tidy functions only work with dataframes, but this still works, and is fast
-    comm.df <- reshape2::melt(communicability.metrics[[2]],
+    comm.df <- reshape2::melt(communicability.metrics[[3]],
                               value.name = "binary.communicability")
     
     # extract cell of sp1 and cell of sp2
@@ -116,7 +122,7 @@ results <- foreach(i.id = 1:length(id.char),
     comm.df$scaled.binary.communicability <- scales::rescale(comm.df$binary.communicability,to = c(0,1))
     
     # this should be valid because the two matrices have the same dimensions and names
-    dfw <- reshape2::melt(communicability.metrics[[3]],
+    dfw <- reshape2::melt(communicability.metrics[[4]],
                           value.name = "weighted.communicability")
     comm.df$weighted.communicability <- dfw$weighted.communicability
     
@@ -171,7 +177,8 @@ results <- foreach(i.id = 1:length(id.char),
                           network.category = network.categories[i.net],
                           dispersal.category = dispersal.categories[i.disp],
                           replicate = i.rep,
-                          normalised.communicability = communicability.metrics[[1]])
+                          raw.communicability = communicability.metrics[[1]],
+                          max.communicability = communicability.metrics[[2]])
     
 # -------------------------------------------------------------------------
 
@@ -190,5 +197,5 @@ stopCluster(cl)
 # -------------------------------------------------------------------------
 
 netcom.df <- list.files("/home/david/Work/datasets/NZ/results/communicability/network_level/",full.names = T) %>% map_dfr(read.csv2)
-netcom.df$X <- NULL
+# netcom.df$X <- NULL
 write.csv2(netcom.df,"results/sim_network_level_communicability.csv",row.names = F)
