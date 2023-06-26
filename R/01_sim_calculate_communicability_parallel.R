@@ -13,8 +13,8 @@
 
 # -------------------------------------------------------------------------
 read.sim.landscape.path <- "/home/david/Work/datasets/NZ/results/sim_landscape_matrices/"
-save.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/"
-save.net.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/network_level/"
+save.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/sim/"
+save.net.comm.path <- "/home/david/Work/datasets/NZ/results/communicability/sim/network_level/"
 
 # -------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ library(doParallel)
 
 library(tidyverse)
 library(igraph) # for path lenghts
-source("R/auxiliary_functions/comm.R")
+source("R/communicability_network.R")
 # range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # set number of cores -----------------------------------------------------
@@ -81,7 +81,7 @@ results <- foreach(i.id = 1:length(id.char),
   {
     
     source("R/communicability.R")
-    source("R/auxiliary_functions/comm.R")
+    source("R/communicability_network.R")
     
     # recover landscape,network, and replicate from the ID
     # i.land <- sub(".*_", "", id.char[i.id])
@@ -104,8 +104,7 @@ results <- foreach(i.id = 1:length(id.char),
                         richness,"sp_",cells,"cells.RData",sep="")
     load(my.landscape.name)
     
-    communicability.metrics <- comm(landscape,
-                                    normalised = TRUE,
+    communicability.metrics <- communicability_network(landscape,
                                     weighted = TRUE,
                                     return.pairwise.comm = T) 
     
@@ -196,6 +195,6 @@ stopCluster(cl)
 
 # -------------------------------------------------------------------------
 
-netcom.df <- list.files("/home/david/Work/datasets/NZ/results/communicability/network_level/",full.names = T) %>% map_dfr(read.csv2)
+netcom.df <- list.files("/home/david/Work/datasets/NZ/results/communicability/sim/network_level/",full.names = T) %>% map_dfr(read.csv2)
 # netcom.df$X <- NULL
 write.csv2(netcom.df,"results/sim_network_level_communicability.csv",row.names = F)

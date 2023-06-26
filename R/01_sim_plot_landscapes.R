@@ -47,7 +47,7 @@ all.plots <- patchwork::wrap_plots(plot.list,ncol = 3)
 ggsave("results/images/landscape_plots.pdf",
        plot = all.plots,
        device = cairo_pdf,
-       width = 12, height = 14,dpi = 600)
+       width = 8, height = 6,dpi = 300)
 
 
 

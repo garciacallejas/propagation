@@ -89,13 +89,3 @@ comm <- function(A,
 
   
 }
-
-# this is an alternative implementation using tailored functions
-# from bertagnolli (package "intsegration")
-# it is a bit more difficult to follow, I think
-# inv.A <- 1/A
-# #this works
-# inv.A[is.infinite(inv.A)] <- .Machine$double.xmax
-# all.shortest.pahts <- intsegration::rcpp_floyd_flow(inv.A)
-# #flows
-# phi.A2 <- all.shortest.pahts$F

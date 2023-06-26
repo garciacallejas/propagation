@@ -1,3 +1,6 @@
+
+# NOTE: this is going to be deprecated, as everything is included in 03_individual...
+
 # Script to plot communicability values in space, grid cells, and more
 
 # INPUTS: 

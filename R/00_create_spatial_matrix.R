@@ -1,127 +1,34 @@
 
+
+# TODO this is going to be deprecated, and the spatial matrix 
+# will be created on the fly to avoid memory issues 
+# see the new "get_subset_communicability" for details
+
 library(tidyverse)
 library(sf)
 
 # -------------------------------------------------------------------------
 
-orig.data <- read.csv("../datasets/plant-bird interactions and traits/plant_bird_interactions.csv")
+sp.obs <- read.csv2("results/plant_bird_observations_clean.csv")
+sp.int <- read.csv2("results/plant_bird_interactions_clean.csv")
 
-# small issues
+# plant.sp <- sort(unique(sp.int$PLANTSPECIES))
+# 
+# plant.df <- data.frame(species = plant.sp)
+# plant.df$species <- str_replace(plant.df$species,"_"," ")
 
-# these names were updated in the gbif occ_search
-# Actinidia deliciosa is a variety of Actinidia chinensis
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Actinidia_deliciosa")] <- "Actinidia_chinensis"
-# Androstoma empetrifolium -> a
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Androstoma_empetrifolium")] <- "Androstoma_empetrifolia"
-# citrus paradisi is not retrieved
-# citrus sinensis is not retrieved
-# dacrydium cupressinum... downloaded manually
-# Dendrobenthamia_capitata is cornus capitata
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Dendrobenthamia_capitata")] <- "Cornus_capitata"
-# Dysoxylum_spectabile... downloaded manually
-# Eriobotrya japonica is thapiolepis loquata
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Eriobotrya_japonica")] <- "Rhaphiolepis_loquata"
-# Leucopogon_fraseri is Styphelia_nesophila
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Leucopogon_fraseri")] <- "Styphelia_nesophila"
-# Phormium_cookianum is Phormium_colensoi
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Phormium_cookianum")] <- "Phormium_colensoi"
-# Phyllocladus_alpinus is Phyllocladus_trichomanoides
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Phyllocladus_alpinus")] <- "Phyllocladus_trichomanoides"
-# Phytolacca_octandra is Phytolacca_icosandra
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Phytolacca_octandra")] <- "Phytolacca_icosandra"
-# Piper_excelsum is Macropiper_excelsum
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Piper_excelsum")] <- "Macropiper_excelsum"
-# Pseudopanax_colensoi is Neopanax_colensoi
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Pseudopanax_colensoi")] <- "Neopanax_colensoi"
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Pseudopanax_colensoi_var_colensoi")] <- "Neopanax_colensoi"
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Pseudopanax_colensoi_var_ternatus")] <- "Neopanax_colensoi"
-# Pseudopanax chathamicus only appears in small islands, very rare
-# Psidium_guajava is not so common, but should be there
-# Solanum_nodiflorum is Solanum_americanum
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Solanum_nodiflorum")] <- "Solanum_americanum"
-# Streblus_heterophyllus is Paratrophis_microphylla
-orig.data$PLANTSPECIES[which(orig.data$PLANTSPECIES == "Streblus_heterophyllus")] <- "Paratrophis_microphylla"
-# Tropaeolum_speciosum downloaded manually
-
-plant.sp <- sort(unique(orig.data$PLANTSPECIES))
-
-# simplify subspecies/varieties
-plant.sp <- str_replace(plant.sp,"_"," ")
-plant.sp <- sort(unique(gsub("\\_.*","",plant.sp)))
-plant.sp <- str_replace(plant.sp," ","_")
+# modify to select grid of different size
+sp.cells <- read.csv2("results/sp_observations_long_100km.csv")
+NZ.grid <- st_read("data/NZ_grid_100km.shp")
 
 # -------------------------------------------------------------------------
-
-# these names were automatically updated in the occ_search
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Callaeas_cinerea")] <- "Callaeas_cinereus"
-# Callaeas_wilsoni is a subsp of Callaeas_cinereus
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Callaeas_wilsoni")] <- "Callaeas_cinereus"
-# Carduelis chloris is Chloris chloris
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Carduelis_chloris")] <- "Chloris_chloris"
-# Carduelis flammea is Acanthis flammea
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Carduelis_flammea")] <- "Acanthis_flammea"
-# cyanoramphus forbesi only appears in Chatham Island
-# Larus novaehollandiae is Chroicocephalus novaehollandiae
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Larus_novaehollandiae")] <- "Chroicocephalus_novaehollandiae"
-# Mohoua novaeseelandiae is Finschia novaeseelandiae
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Mohoua_novaeseelandiae")] <- "Finschia_novaeseelandiae"
-# Philesturnus rufusater is found only in offshore islands and sanctuaries
-# Strygops habroptilus is Strygops habroptila
-orig.data$BIRDSPECIES[which(orig.data$BIRDSPECIES == "Strigops_habroptilus")] <- "Strigops_habroptila"
-
-bird.sp <- sort(unique(orig.data$BIRDSPECIES))
-
-# simplify subspecies/varieties
-bird.sp <- str_replace(bird.sp,"_"," ")
-bird.sp <- sort(unique(gsub("\\_.*","",bird.sp)))
-bird.sp <- str_replace(bird.sp," ","_")
-
-# -------------------------------------------------------------------------
-sp.files <- list.files(path = "results/sp_observations",
-                       pattern = "*.csv",
-                       full.names = T)
-sp.obs <- sp.files %>% map_dfr(read_csv2)
-sp.obs <- subset(sp.obs, !is.na(year))
-
-NZ.grid <- st_read("data/NZ_grid.shp")
+all.sp <- sort(unique(sp.obs$species))
+plant.sp <- sort(unique(sp.int$PLANTSPECIES))
+bird.sp <- sort(unique(sp.int$BIRDSPECIES))
 
 # taken directly from the grid. It may be the case that there are cells
 # without observations, i.e. not represented in sp.obs
-cell.id <- sort(unique(NZ.grid$grid_id))
-
-# -------------------------------------------------------------------------
-
-# issues:
-# set a temporal threshold for observations?
-# min(sp.obs$year,na.rm = T)
-
-min.year <- 2010
-sp.obs.2 <- subset(sp.obs, year >= min.year)
-
-# assume that bird populations from adjacent cells are linked
-# in next iterations, this can be improved by accounting for differences in dispersal ability
-# possibly inferred by looking at morphological traits
-
-# -------------------------------------------------------------------------
-# keep the set of all species
-sp.obs.2$species <- str_replace(sp.obs.2$species," ","_")
-all.sp <- sort(unique(sp.obs.2$species))
-
-# now, a few bird species are not present in the two main islands, which is 
-# the territory I am considering. 
-# so, remove them
-bird.sp <- bird.sp[which(bird.sp %in% all.sp)]
-
-# for plants, I discard taxa identified at the genus level,
-# and a couple of very rare species (Pseudopanax chathamicus,
-# Jasminum officinale, citrus paradisi, citrus sinensis)
-plant.sp <- plant.sp[which(plant.sp %in% all.sp)]
-# discarded.plants <- plant.sp[which(!(plant.sp %in% all.sp))]
-
-# -------------------------------------------------------------------------
-# with this clean set of plant and bird species,
-# I need to update the list of interactions to only account for these sp
-clean.int.data <- subset(orig.data, BIRDSPECIES %in% bird.sp & PLANTSPECIES %in% plant.sp)
+cell.id <- sort(unique(NZ.grid$cell_id))
 
 # -------------------------------------------------------------------------
 # I need to know which grid cells are adjacent
@@ -158,7 +65,7 @@ for(i.row in 1:length(cell.id)){
 # -------------------------------------------------------------------------
 # build the full block matrix, considering only cells with observations
 
-represented.cells <- cell.id[which(cell.id %in% unique(sp.obs.2$grid_id))]
+represented.cells <- cell.id[which(cell.id %in% unique(sp.cells$cell_id))]
 
 matrix.n.rows <- length(all.sp)*length(represented.cells)
 df.names <- expand.grid(all.sp,represented.cells)
@@ -181,30 +88,30 @@ diag(adjacency.matrix) <- 1
 
 # -------------------------------------------------------------------------
 # a dataframe with observations of species (plant here, birds below) per cell
-for(i.obs in 1:nrow(clean.int.data)){
-  adjacency.matrix[clean.int.data$PLANTSPECIES[i.obs],clean.int.data$BIRDSPECIES[i.obs]] <- 1
-  adjacency.matrix[clean.int.data$BIRDSPECIES[i.obs],clean.int.data$PLANTSPECIES[i.obs]] <- 1
+for(i.obs in 1:nrow(sp.int)){
+  adjacency.matrix[sp.int$PLANTSPECIES[i.obs],sp.int$BIRDSPECIES[i.obs]] <- 1
+  adjacency.matrix[sp.int$BIRDSPECIES[i.obs],sp.int$PLANTSPECIES[i.obs]] <- 1
 }# for i.obs
 
-plant.sp.cells <- subset(sp.obs.2,species %in% plant.sp)
-plant.sp.cells <- plant.sp.cells[,c("grid_id","species")]
+plant.sp.cells <- subset(sp.cells,species %in% plant.sp)
+# plant.sp.cells <- plant.sp.cells[,c("cell_id","species")]
 
-plant.sp.cells.2 <- plant.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
+# plant.sp.cells.2 <- plant.sp.cells %>% group_by(cell_id,species) %>% summarise(obs = n())
 
-plant.sp.cells.wide <- pivot_wider(plant.sp.cells.2,
-                                  names_from = grid_id,
-                                  values_from = obs,
+plant.sp.cells.wide <- pivot_wider(plant.sp.cells,
+                                  names_from = cell_id,
+                                  values_from = observations,
                                   values_fill = 0)
 
 # -------------------------------------------------------------------------
-bird.sp.cells <- subset(sp.obs.2,species %in% bird.sp)
-bird.sp.cells <- bird.sp.cells[,c("grid_id","species")]
+bird.sp.cells <- subset(sp.cells,species %in% bird.sp)
+# bird.sp.cells <- bird.sp.cells[,c("cell_id","species")]
+# 
+# bird.sp.cells.2 <- bird.sp.cells %>% group_by(cell_id,species) %>% summarise(obs = n())
 
-bird.sp.cells.2 <- bird.sp.cells %>% group_by(grid_id,species) %>% summarise(obs = n())
-
-bird.sp.cells.wide <- pivot_wider(bird.sp.cells.2,
-                                  names_from = grid_id,
-                                  values_from = obs,
+bird.sp.cells.wide <- pivot_wider(bird.sp.cells,
+                                  names_from = cell_id,
+                                  values_from = observations,
                                   values_fill = 0)
 
 # -------------------------------------------------------------------------
@@ -326,8 +233,7 @@ for(i.sp in 1:nrow(bird.sp.cells.wide)){
 # save the block matrix to disk
 save(block.matrix,file = "results/community_block_matrix.Rdata")
 
-# and the clean interaction data
-write.csv2(clean.int.data,"data/plant_bird_clean_interaction_data.csv",row.names = F)
+# and the clean presence data
 write.csv2(bird.sp.cells.wide,"data/bird_cell_presences.csv",row.names = F)
 write.csv2(plant.sp.cells.wide,"data/plant_cell_presences.csv",row.names = F)
 

@@ -2,18 +2,10 @@
 # Script to average communicability values over grid cells and guilds
 
 # INPUTS: 
-# - pairwise communicability dataframe: "{external_path}/results/communicability_pairwise.Rdata"
-# - bird presences in cells: "data/bird_cell_presences.csv"
-# - plant presences in cells: "data/plant_cell_presences.csv"
+# - pairwise communicability dataframes: "/results/communicability/NZ_networks/*.csv"
 
 # OUTPUTS:
-# - average communicability df: "results/average_communicability.csv"
-
-# NOTE:
-# some inputs are too big for git/github. load them externally and keep 
-# the path {external_path} always the same
-
-external_path <- "/home/david/Work/datasets/NZ/"
+# - average communicability by species/cell df: "results/*level_communicability.csv"
 
 # -------------------------------------------------------------------------
 
@@ -22,40 +14,35 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 # -------------------------------------------------------------------------
 
-# this is a huge file (~12GB on memory)
-load(paste(external_path,"results/communicability_pairwise.Rdata",sep=""))
+grid.size <- 10
 
-# df1 <- df1[1:1e7,]
+# TODO filter the files read to only those from grid.size km
+# so far it works because I only have 10km files, but CAREFUL!
+pair.comm <- list.files("results/communicability/NZ_networks/",
+                        full.names = T) %>% 
+  map_dfr(read.csv2)
 
-bird.sp.cells.wide <- read.csv2("data/bird_cell_presences.csv")
-plant.sp.cells.wide <- read.csv2("data/plant_cell_presences.csv")
+sp.comm <- pair.comm %>% 
+  group_by(sp1,guild.sp1) %>%
+  summarise(bin.communicability = sum(population.bin.communicability),
+            weighted.communicability = sum(population.weighted.communicability)) 
+sp.comm$scaled.bin.communicability <- scales::rescale(sp.comm$bin.communicability)
+sp.comm$scaled.weighted.communicability <- scales::rescale(sp.comm$weighted.communicability)
 
-bird.sp <- sort(unique(bird.sp.cells.wide$species))
-plant.sp <- sort(unique(plant.sp.cells.wide$species))
-all.sp <- sort(unique(c(bird.sp,plant.sp)))
-num.sp <- length(all.sp)
+names(sp.comm)[1:2] <- c("species","guild")
 
-represented.cells <- unique(c(names(bird.sp.cells.wide),names(plant.sp.cells.wide)))
-represented.cells <- as.numeric(substr(represented.cells[-1],
-                                       start = 2,
-                                       stop = nchar(represented.cells[-1])))
+cell.comm <- pair.comm %>%
+  group_by(cell.id.sp1) %>%
+  summarise(bin.communicability = sum(population.bin.communicability),
+            weighted.communicability = sum(population.weighted.communicability)) 
+cell.comm$scaled.bin.communicability <- scales::rescale(cell.comm$bin.communicability)
+cell.comm$scaled.weighted.communicability <- scales::rescale(cell.comm$weighted.communicability)
 
-# -------------------------------------------------------------------------
-
-df1$guild.sp1 <- ifelse(df1$sp1 %in% bird.sp, "birds", "plants")
-df1$guild.sp2 <- ifelse(df1$sp2 %in% bird.sp, "birds", "plants")
-
-df.avg <- df1 %>% 
-  group_by(guild.sp1,guild.sp2,grid.id.sp1,grid.id.sp2) %>%
-  summarise(avg.communicability = mean(binary.communicability)) %>%
-  mutate(scaled.avg.communicability = range01(avg.communicability)) %>%
-  rename(source.guild = guild.sp1,
-         source.cell = grid.id.sp1,
-         recipient.guild = guild.sp2,
-         recipient.cell = grid.id.sp2)
+names(cell.comm)[1] <- "cell_id"
 
 # -------------------------------------------------------------------------
 
-write.csv2(df.avg,"results/average_communicability.csv",row.names = FALSE)
+write.csv2(sp.comm,paste("results/species_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
+write.csv2(cell.comm,paste("results/cell_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 
 

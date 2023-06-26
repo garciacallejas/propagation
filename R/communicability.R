@@ -7,23 +7,42 @@
 #' counterpart, by exponentiating the scaled weighted matrix.
 #'
 #' @param A numeric matrix
-#'
+#' @param binary whether to compute binary communicability matrix
+#' @param weighted whether to compute weighted communicability matrix
+#' @param return.scaled whether the communicability matrices are scaled to 
+#' values in the interval (0,1) or the raw values are returned.
 #' @return list with two components: binary.comm.matrix and weighted.comm.matrix
 #' @export
 #'
 #' @examples
-communicability <- function(A, binary = TRUE, weighted = TRUE){
+communicability <- function(A, binary = TRUE, 
+                            weighted = TRUE, 
+                            return.scaled = TRUE){
   
   range01 <- function(x){(x-min(x))/(max(x)-min(x))}
   
-  # is my matrix binary?
-  is.binary <- sum(A != 1 & A != 0) == 0
-  if(is.binary){
-    # binary
-    # beware, it takes a while for a 200M elements matrix - RAM is a limiting factor
-    binary.comm.matrix <- expm::expm(A)
-    weighted.comm.matrix <- NA
-  }else{
+  if(sum(is.na(A)>0)){
+    message("Communicability function: input matrix contains NAs. These will be converted
+            to zeros.")
+    A[which(is.na(A))] <- 0
+  }
+  
+  if(sum(A<0)>1){
+    message("Communicability function: input matrix contains negative numbers. It will be converted
+            to absolute values for the calculation of communicability.")
+    A <- abs(A)
+  }
+  
+  # # is my matrix binary?
+  # is.binary <- sum(A != 1 & A != 0) == 0
+  # if(is.binary){
+  #   # binary
+  #   # beware, it takes a while for a 200M elements matrix - RAM is a limiting factor
+  #   binary.comm.matrix <- expm::expm(A)
+  #   weighted.comm.matrix <- NA
+  # }else{
+  
+  # compute binary, weighted, or both
     # binary and weighted
     if(binary){
       binary.matrix <- ifelse(A != 0, 1, 0)
@@ -55,6 +74,11 @@ communicability <- function(A, binary = TRUE, weighted = TRUE){
     # 
     # multiplied.matrix <- d.pow %*% abs.int.matrix %*% d.pow # eq. 2.2 of Crofts and Higham 2009
     # weighted.comm.matrix <- expm::expm(multiplied.matrix)
+  # }
+  
+  if(return.scaled){
+    binary.comm.matrix <- range01(binary.comm.matrix)
+    weighted.comm.matrix <- range01(weighted.comm.matrix)
   }
   
   return(list(binary.matrix = binary.comm.matrix, 

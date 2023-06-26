@@ -8,27 +8,25 @@ library(tidyverse)
 # -------------------------------------------------------------------------
 
 # independent list of plants/birds
-bird.sp.cells.wide <- read.csv2("data/bird_cell_presences.csv")
-plant.sp.cells.wide <- read.csv2("data/plant_cell_presences.csv")
+sp.list <- read.csv2("data/species_list.csv")
 
-bird.sp <- sort(unique(bird.sp.cells.wide$species))
-plant.sp <- sort(unique(plant.sp.cells.wide$species))
+bird.sp <- sort(unique(sp.list$species[which(sp.list$guild == "birds")]))
+plant.sp <- sort(unique(sp.list$species[which(sp.list$guild == "plants")]))
 all.sp <- sort(unique(c(bird.sp,plant.sp)))
 num.sp <- length(all.sp)
 
 # status
-status <- read.csv("../datasets/plant-bird interactions and traits/plant_bird_interactions.csv")
-plant.status <- unique(status[,c("PLANTSPECIES","PLANTSTATUS")])
-bird.status <- unique(status[,c("BIRDSPECIES","BIRDSTATUS")])
+plant.status <- subset(sp.list,guild == "plants")
+bird.status <- subset(sp.list,guild == "birds")
 
 # -------------------------------------------------------------------------
 
 # trait datasets
 plants <- read.csv("../datasets/plant-bird interactions and traits/plant_traits.csv")
 birds.peralta <- read.csv("../datasets/plant-bird interactions and traits/bird_traits.csv")
-birds.avonet <- read_csv("../datasets/bird traits/AVONET/AVONET_Raw_Data.csv")
-birds.avonet.lifestyle <- read_csv("../datasets/bird traits/AVONET/AVONET1_BirdLife.csv")
-birds.body.sizes <- read_tsv("../datasets/bird traits/body_sizes/avian_ssd_jan07.txt")
+birds.avonet <- read_csv("../../../datasets/NZ/bird traits/AVONET/AVONET_Raw_Data.csv")
+birds.avonet.lifestyle <- read_csv("../../../datasets/NZ/bird traits/AVONET/AVONET1_BirdLife.csv")
+birds.body.sizes <- read_tsv("../../../datasets/NZ/bird traits/body_sizes/avian_ssd_jan07.txt")
 
 # NOTE: this is taken from 00_create_spatial_matrix
 # in order to have consistent species names
@@ -47,6 +45,10 @@ plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Pseudopanax_colensoi_var_colen
 plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Pseudopanax_colensoi_var_ternatus")] <- "Neopanax_colensoi"
 plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Solanum_nodiflorum")] <- "Solanum_americanum"
 plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Streblus_heterophyllus")] <- "Paratrophis_microphylla"
+
+plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Olea_europaea_subsp_cuspidata")] <- "Olea_europaea"
+plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Passiflora_edulis_f_edulis")] <- "Passiflora_edulis"
+plants$PLANTSPECIES[which(plants$PLANTSPECIES == "Passiflora_tripartita_var_mollissima")] <- "Passiflora_tripartita"
 
 # maybe more checks needed, e.g. for genus?
 plants <- subset(plants, PLANTSPECIES %in% plant.sp)
@@ -123,36 +125,6 @@ bird.trait.data.2$guild <- "birds"
 
 trait.data <- bind_rows(bird.trait.data.2,plant.traits)
 
-# -------------------------------------------------------------------------
-# add species status
-
-names(plant.status) <- c("species","status")
-names(bird.status) <- c("species","status")
-
-plant.status$species[which(plant.status$species == "Actinidia_deliciosa")] <- "Actinidia_chinensis"
-plant.status$species[which(plant.status$species == "Androstoma_empetrifolium")] <- "Androstoma_empetrifolia"
-plant.status$species[which(plant.status$species == "Dendrobenthamia_capitata")] <- "Cornus_capitata"
-plant.status$species[which(plant.status$species == "Eriobotrya_japonica")] <- "Rhaphiolepis_loquata"
-plant.status$species[which(plant.status$species == "Leucopogon_fraseri")] <- "Styphelia_nesophila"
-plant.status$species[which(plant.status$species == "Phormium_cookianum")] <- "Phormium_colensoi"
-plant.status$species[which(plant.status$species == "Phyllocladus_alpinus")] <- "Phyllocladus_trichomanoides"
-plant.status$species[which(plant.status$species == "Phytolacca_octandra")] <- "Phytolacca_icosandra"
-plant.status$species[which(plant.status$species == "Piper_excelsum")] <- "Macropiper_excelsum"
-plant.status$species[which(plant.status$species == "Pseudopanax_colensoi")] <- "Neopanax_colensoi"
-plant.status$species[which(plant.status$species == "Pseudopanax_colensoi_var_colensoi")] <- "Neopanax_colensoi"
-plant.status$species[which(plant.status$species == "Pseudopanax_colensoi_var_ternatus")] <- "Neopanax_colensoi"
-plant.status$species[which(plant.status$species == "Solanum_nodiflorum")] <- "Solanum_americanum"
-plant.status$species[which(plant.status$species == "Streblus_heterophyllus")] <- "Paratrophis_microphylla"
-
-bird.status$species[which(bird.status$species == "Callaeas_cinerea")] <- "Callaeas_cinereus"
-bird.status$species[which(bird.status$species == "Callaeas_wilsoni")] <- "Callaeas_cinereus"
-bird.status$species[which(bird.status$species == "Carduelis_chloris")] <- "Chloris_chloris"
-bird.status$species[which(bird.status$species == "Carduelis_flammea")] <- "Acanthis_flammea"
-bird.status$species[which(bird.status$species == "Larus_novaehollandiae")] <- "Chroicocephalus_novaehollandiae"
-bird.status$species[which(bird.status$species == "Hemiphaga_novaeseelandiae_chathamensis")] <- "Hemiphaga_novaeseelandiae"
-bird.status$species[which(bird.status$species == "Mohoua_novaeseelandiae")] <- "Finschia_novaeseelandiae"
-bird.status$species[which(bird.status$species == "Strigops_habroptilus")] <- "Strigops_habroptila"
-
 status.clean <- bind_rows(plant.status,bird.status)
 
 # -------------------------------------------------------------------------
@@ -170,7 +142,7 @@ birds.avonet.lifestyle.2 <- subset(birds.avonet.lifestyle, species %in% bird.sp)
 
 # -------------------------------------------------------------------------
 
-write.csv2(trait.data,"results/trait_data.csv",row.names = FALSE)
-write.csv2(birds.avonet.lifestyle.2,"results/bird_lifestyle.csv",row.names = FALSE)
+write.csv2(trait.data,"data/trait_data.csv",row.names = FALSE)
+write.csv2(birds.avonet.lifestyle.2,"data/bird_lifestyle.csv",row.names = FALSE)
 
 

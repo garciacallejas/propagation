@@ -11,8 +11,8 @@ NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
 # -------------------------------------------------------------------------
 # set cell size in meters
 
-grid.size <- 100000 # 100km
-# grid.size <- 10000 # 10km
+# grid.size <- 100000 # 100km
+grid.size <- 10000 # 10km
 # grid.size <- 1000 # 1km
 
 # -------------------------------------------------------------------------
@@ -30,6 +30,10 @@ grid$cell_id <- 1:nrow(grid)
 
 # add x-y coords of the centroid
 grid_with_labels <- st_centroid(grid) %>% cbind(st_coordinates(.))
+
+grid.coords <- data.frame(cell_id = grid_with_labels$cell_id,
+                          lat_centroid = grid_with_labels$Y,
+                          lon_centroid = grid_with_labels$X)
 
 # Plot
 # plot(st_geometry(grid), axes = TRUE, reset = FALSE)
@@ -52,6 +56,7 @@ grid_with_labels <- st_centroid(grid) %>% cbind(st_coordinates(.))
 
 st_write(grid_with_labels,paste("data/NZ_grid_",grid.size/1e3,"km.csv",sep=""),append = F)
 st_write(grid,paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""),append = F)
+write.csv2(grid.coords,paste("data/NZ_grid_coords_",grid.size/1e3,"km.csv",sep=""))
 
 # -------------------------------------------------------------------------
 
@@ -64,7 +69,6 @@ st_write(grid,paste("data/NZ_grid_",grid.size/1e3,"km.shp",sep=""),append = F)
 # 
 # # create labels for each grid_id
 # grid_lab <- st_centroid(grid_1_land) %>% cbind(st_coordinates(.))
-
 
 # -------------------------------------------------------------------------
 

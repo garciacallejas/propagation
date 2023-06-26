@@ -29,7 +29,7 @@ library(sf)
 
 # set number of cores -----------------------------------------------------
 
-workers <- 10
+workers <- 6
 cl <- makeCluster(workers)
 # register the cluster for using foreach
 registerDoParallel(cl)

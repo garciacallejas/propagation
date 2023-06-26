@@ -8,6 +8,11 @@
 # csv with simulation parameters
 
 # -------------------------------------------------------------------------
+# version of the parameters
+
+ver <- "v3"
+
+# -------------------------------------------------------------------------
 
 sim.parameters <- data.frame(ncol = 0,nrow = 0,
                              num.landscape.categories = 0,
@@ -40,8 +45,8 @@ sim.parameters$richness <-  30
 sim.parameters$num.network.categories <- 5
 
 # poisson mean
-sim.parameters$min.lambda <- 3
-sim.parameters$max.lambda <- 15 # this should vary with richness. for S = 50, 15 gives connectance = 0.3
+sim.parameters$min.lambda <- 1.75
+sim.parameters$max.lambda <- 9.75 # this should vary with richness. for S = 50, 15 gives connectance = 0.3
 
 # some constants for sampling interaction strengths
 sim.parameters$int.mean <- 0
@@ -55,13 +60,13 @@ sim.parameters$diag.dom <- 0
 sim.parameters$num.dispersal.categories <- 5
 
 # exponetial rate
-sim.parameters$min.rate <- .75
-sim.parameters$max.rate <- .25 
+sim.parameters$min.rate <- .9
+sim.parameters$max.rate <- .1 
 
 # -------------------------------------------------------------------------
 # overall number of replicates per category
 sim.parameters$num.category.replicates <- 10
 
 # -------------------------------------------------------------------------
-write.csv2(sim.parameters,"results/sim_landscape_matrices/parameters_v2.csv")
+write.csv2(sim.parameters,paste("results/sim_landscape_matrices/parameters_",ver,".csv",sep=""))
 

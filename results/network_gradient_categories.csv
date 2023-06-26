@@ -1,6 +1,6 @@
-"network.category";"poisson.lambda"
-"dd01";3
-"dd02";6
-"dd03";9
-"dd04";12
-"dd05";15
+"network.category";"poisson.lambda";"connectance"
+"dd01";1,75;0,072
+"dd02";3,75;0,128
+"dd03";5,75;0,193
+"dd04";7,75;0,264
+"dd05";9,75;0,334

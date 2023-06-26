@@ -27,7 +27,7 @@ library(raster)
 # -------------------------------------------------------------------------
 # generate a grid landscape with 0-1 habitat values in each cell
 
-param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
+param <- read.csv2("results/sim_landscape_matrices/parameters_v3.csv")
 
 ncol <- param$ncol
 nrow <- param$nrow

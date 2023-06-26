@@ -1,5 +1,7 @@
 
 
+# NOTE this is going to be deprecated, not needed anymore
+
 library(tidyverse)
 
 # -------------------------------------------------------------------------

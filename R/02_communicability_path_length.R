@@ -1,4 +1,8 @@
 
+#####################
+# NOTE this is going to be deprecated - I don't think I will use path lengths
+#####################
+
 # Script to obtain shortest path lengths between any two nodes on the supra-adjacency matrix
 
 # INPUTS: 

@@ -1,4 +1,6 @@
 
+# NOTE: likely to be deprecated, updated in 00_get_subset_communicability
+
 # Script to obtain communicability matrix from interactions
 
 # INPUTS: 
@@ -20,11 +22,14 @@ external_path <- "/home/david/Work/datasets/NZ/"
 
 # -------------------------------------------------------------------------
 
-library(data.table)
+# library(data.table)
 # library(tidyverse)
 library(expm) # for matrix exponentiation
 # library(igraph)
 range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+
+source("R/communicability.R")
+source("R/communicability_network.R")
 
 # -------------------------------------------------------------------------
 load("results/community_block_matrix.Rdata")
@@ -46,39 +51,14 @@ represented.cells <- as.numeric(substr(represented.cells[-1],
                                        start = 2,
                                        stop = nchar(represented.cells[-1])))
 # -------------------------------------------------------------------------
+# test
+bt <- block.matrix[1:1000,1:1000]
 
-# is my matrix binary?
-is.binary <- sum(block.matrix > 1) == 0
-if(is.binary){
-  # binary
-  # beware, it takes a while for a 200M elements matrix - RAM is a limiting factor
-  binary.comm.matrix <- expm(block.matrix)
-  weighted.comm.matrix <- 0
-}else{
-  # binary and weighted
-  binary.matrix <- ifelse(block.matrix != 0, 1, 0)
-  binary.comm.matrix <- expm(binary.matrix)
-  # TODO consider weighting these elements by community size
+nz.comm <- communicability_network(bt,weighted = F,return.pairwise.comm = T)
+full.comm <- communicability_network(block.matrix,weighted = F,return.pairwise.comm = T)
 
-  # weighted
-  
-  scaled.comm.matrix <- range01(block.matrix)
-  weighted.comm.matrix <- expm(scaled.comm.matrix)
-  
-  # abs.int.matrix <- abs(block.matrix)
-  # degree.diag.matrix <- matrix(0,nrow = nrow(binary.matrix),
-  #                              ncol = ncol(binary.matrix))
-  # diag(degree.diag.matrix) <- rowSums(abs.int.matrix) # strength - suma de los pesos
-  # 
-  # d.inverse <- solve(degree.diag.matrix)
-  # d.pow <- sqrt(d.inverse)
-  # 
-  # multiplied.matrix <- d.pow %*% abs.int.matrix %*% d.pow # eq. 2.2 of Crofts and Higham 2009
-  # weighted.comm.matrix <- expm(multiplied.matrix)
-}
-
-save(binary.comm.matrix,file = paste(external_path,"results/binary_communicability_matrix.Rdata"),sep="")
-save(weighted.comm.matrix,file = paste(external_path,"results/weighted_communicability_matrix.Rdata"),sep="")
+# save(binary.comm.matrix,file = paste(external_path,"results/binary_communicability_matrix.Rdata"),sep="")
+# save(weighted.comm.matrix,file = paste(external_path,"results/weighted_communicability_matrix.Rdata"),sep="")
 
 rm(block.matrix)
 gc(verbose = F)

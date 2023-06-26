@@ -20,7 +20,7 @@ library(igraph)
 library(gamlss.dist)
 
 # -------------------------------------------------------------------------
-param <- read.csv2("results/sim_landscape_matrices/parameters_v2.csv")
+param <- read.csv2("results/sim_landscape_matrices/parameters_v3.csv")
 
 richness <-  param$richness
 num.network.categories <- param$num.network.categories

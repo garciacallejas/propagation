@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(patchwork)
+library(igraph)
 library(ggraph)
 library(tidygraph)
 
@@ -69,10 +70,10 @@ for(i in 1:length(lambda.values)){
 all.plots <- patchwork::wrap_plots(plot.list,ncol = 3)
 
 # -------------------------------------------------------------------------
-ggsave("results/images/network_plots.pdf",
-       plot = all.plots,
-       device = cairo_pdf,
-       width = 12, height = 14,dpi = 600)
+# ggsave("results/images/network_plots.pdf",
+#        plot = all.plots,
+#        device = cairo_pdf,
+#        width = 8, height = 6,dpi = 300)
 
 # -------------------------------------------------------------------------
 
