@@ -22,6 +22,9 @@ pair.comm <- list.files("results/communicability/NZ_networks/",
                         full.names = T) %>% 
   map_dfr(read.csv2)
 
+# test
+all.sp <- unique(pair.comm[,c("sp1","guild.sp1")])
+
 sp.comm <- pair.comm %>% 
   group_by(sp1,guild.sp1) %>%
   summarise(bin.communicability = sum(population.bin.communicability),
@@ -41,7 +44,15 @@ cell.comm$scaled.weighted.communicability <- scales::rescale(cell.comm$weighted.
 names(cell.comm)[1] <- "cell_id"
 
 # -------------------------------------------------------------------------
+# clean "pair.comm" 
+pair.comm.clean <- pair.comm %>% 
+  select(-X) %>%
+  rename(species = sp1,guild = guild.sp1,cell_id = cell.id.sp1)
 
+
+# -------------------------------------------------------------------------
+
+write.csv2(pair.comm.clean,paste("results/population_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 write.csv2(sp.comm,paste("results/species_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 write.csv2(cell.comm,paste("results/cell_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 

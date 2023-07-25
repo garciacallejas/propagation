@@ -26,4 +26,11 @@ presence.df$presence <- ifelse(presence.df$prob > occurrence.threshold,1,0)
 presence.df$prob <- NULL
 presence.df$cell_id <- as.numeric(presence.df$cell_id)
 
+# test species
+# occurrence.all.sp <- sort(unique(occurrence.prob.df$species))
+# presences.all.sp <- sort(unique(presence.df$species[which(presence.df$presence == 1)]))
+
 write.csv2(presence.df,paste("results/model_occurrences_",grid.size,"km.csv",sep=""),row.names = F)
+
+
+

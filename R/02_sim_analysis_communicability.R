@@ -172,7 +172,7 @@ for(i in 1:nrow(correlations.df)){
 }
 cor.df.long <- pivot_longer(correlations.df,dispersal.distance:presences,names_to = "factor",values_to = "rho")
 
-cor.df.long$factor[cor.df.long$factor == "dispersal.distance"] <- "dispersal distance"
+cor.df.long$factor[cor.df.long$factor == "dispersal.distance"] <- "dispersal\n distance"
 cor.df.long$factor[cor.df.long$factor == "presences"] <- "number of\npresences"
 
 corr.dist.plots <- ggplot(cor.df.long, aes(x = factor, y = rho)) +
@@ -184,8 +184,8 @@ corr.dist.plots
 
 sp.data.long <- sp.data.scaled.2 %>% pivot_longer(degree:presences,names_to = "factor",values_to = "value")
 
-sp.data.long$factor[sp.data.long$factor == "dispersal.distance"] <- "dispersal distance"
-sp.data.long$factor[sp.data.long$factor == "presences"] <- "number of presences"
+sp.data.long$factor[sp.data.long$factor == "dispersal.distance"] <- "dispersal\n distance"
+sp.data.long$factor[sp.data.long$factor == "presences"] <- "number of\n presences"
 
 corr.raw.plots <- ggplot(sp.data.long, aes(x = value, y = scaled.wc)) +
   geom_pointdensity() +
@@ -194,6 +194,8 @@ corr.raw.plots <- ggplot(sp.data.long, aes(x = value, y = scaled.wc)) +
   # geom_point(alpha = .4) +
   facet_grid(factor~.,scales = "free_y") +
   # scale_fill_continuous(type = "viridis") +
+  ylab("scaled weighted communicability") +
+  xlab("") +
   theme_bw() +
   theme(strip.background = element_blank())+
   NULL
@@ -206,7 +208,7 @@ cor.complete <- corr.dist.plots + corr.raw.plots + plot_layout(widths = c(1, 2))
 ggsave("results/images/simulations/species_level_communicability_simulations.pdf",
        plot = cor.complete,
        device = cairo_pdf,
-       width = 12, height = 6,dpi = 300)
+       width = 9, height = 4,dpi = 300)
 
 # sp.data.scaled.2$scaled.wc[sp.data.scaled.2$scaled.wc == 0] <- 1e-7
 # sp.data.scaled.2$presences[sp.data.scaled.2$presences == 0] <- 1e-7

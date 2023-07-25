@@ -11,11 +11,6 @@ library(performance)
 grid.size <- 10
 
 sp.comm <- read.csv2(paste("results/species_level_communicability_",grid.size,"km.csv",sep=""))
-sp.comm.
-
-# TODO to be obtained from the simulations, this is just to test the workflow
-sp.communicability <- runif(length(sp.list))
-communicability.data <- data.frame(species = sp.list, comm = sp.communicability)
 
 sp.traits <- read.csv2("data/trait_data.csv")
 sp.traits.2 <- sp.traits
@@ -72,7 +67,7 @@ sp.data <- left_join(sp.traits.wide,sp.comm) %>%
 sp.data$comm[which(sp.data$comm == 0)] <- 1e-5
 sp.data$comm[which(sp.data$comm == 1)] <- 0.99999
 
-plant.data <- subset(sp.data,guild = "plants") %>% 
+plant.data <- subset(sp.data,guild == "plants") %>% 
   select(species,comm,status,
          FRUIT_DIAMETER_mm,
          FRUIT_LENGTH_mm,
@@ -80,10 +75,15 @@ plant.data <- subset(sp.data,guild = "plants") %>%
   drop_na()
 bird.data <- subset(sp.data, guild == "birds") %>% 
   select(species,comm,status,
-         Beak.Depth, Beak.Length_Culmen,
-         Beak.Length_Nares, Beak.Width,BILL_LENGTH_mm,
-         BILL_WIDTH_mm,body.mass,HWI,Kipps.Distance,
-         Tail.Length,Tarsus.Length,Wing.Length) %>%
+         # Beak.Depth, Beak.Length_Culmen,
+         # Beak.Length_Nares, 
+         # Beak.Width,
+         BILL_LENGTH_mm,
+         # BILL_WIDTH_mm,
+         body.mass,HWI,
+         # Kipps.Distance,
+         # Tail.Length,Tarsus.Length,Wing.Length
+         ) %>%
   drop_na()
 
 # -------------------------------------------------------------------------

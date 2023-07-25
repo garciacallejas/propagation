@@ -3,9 +3,9 @@
 
 # -------------------------------------------------------------------------
 library(tidyverse)
-source("R/auxiliary_functions/comm.R")
+source("R/communicability_network.R")
 source("R/communicability.R")
-source("R/horizontal_community_matrix.R")
+# source("R/horizontal_community_matrix.R")
 # -------------------------------------------------------------------------
 # three patches, three configurations. This needs to be handcrafted
 
@@ -47,7 +47,6 @@ local.block[9,11] <- local.block[11,9] <- 0
 local.block[11,10] <- local.block[10,11] <- 0
 local.block[10,12] <- local.block[12,10] <- 0
 
-
 # -------------------------------------------------------------------------
 # modified dispersal
 dispersal.block <- matrix(0,nrow = S*n.blocks, ncol = S*n.blocks)
@@ -81,7 +80,56 @@ composition.block[10,] <- composition.block[,10] <- 0
 
 # -------------------------------------------------------------------------
 
-comm(full.block)
-comm(dispersal.block)
-comm(local.block)
-comm(composition.block)
+fullc <- communicability_network(full.block,weighted = F)
+dispc <- communicability_network(dispersal.block,weighted = F)
+localc <- communicability_network(local.block,weighted = F)
+compc <- communicability_network(composition.block,weighted = F)
+
+com.df <- data.frame(network = c("full","decreased local\ninteractions",
+                                  "decreased\ndispersal",
+                                  "decreased\ncomposition"),
+                     communicability = c(fullc[[1]],dispc[[1]],localc[[1]],compc[[1]]),
+                     maximal.communicability = c(fullc[[2]],dispc[[2]],localc[[2]],compc[[2]]))
+com.df$normalised.communicability <- com.df$communicability/com.df$maximal.communicability
+
+# -------------------------------------------------------------------------
+com.df$log.maximal.communicability <- log(com.df$maximal.communicability)
+com.df$maximal.communicability <- NULL
+com.df.long <- pivot_longer(com.df,communicability:log.maximal.communicability,names_to = "metric",values_to = "value")
+com.df.long$network <- factor(com.df.long$network,levels = c("full","decreased local\ninteractions",
+                                                             "decreased\ndispersal",
+                                                             "decreased\ncomposition"))
+
+comp <- ggplot(com.df.long, aes(x = network, y = value)) + 
+  geom_col() + 
+  facet_wrap(~metric, scales = "free_y") +
+  theme_bw() +
+  labs(x = "") +
+  theme(strip.background = element_blank())+
+  NULL
+# comp
+
+ggsave(filename = paste("results/images/simulations/example_networks_metrics.pdf",sep=""),plot = comp,
+       device = cairo_pdf,
+       width = 11,height = 5,dpi = 300)
+
+# -------------------------------------------------------------------------
+
+local.matrix <- matrix(0,nrow = 4, ncol = 4, dimnames = list(c("sp1","sp2","sp3","sp4"),
+                                                             c("sp1","sp2","sp3","sp4")))
+
+mat.template <- local.matrix %>% 
+  as.data.frame() %>%
+  rownames_to_column("sp") %>%
+  pivot_longer(-c(sp), names_to = "spcol", values_to = "interaction") %>%
+  mutate(sp = factor(sp, levels = c("sp4","sp3","sp2","sp1"))) %>%
+  ggplot(aes(x=spcol, y=sp)) + 
+  geom_tile(color = "grey20",fill = "white") + 
+  labs(x = "", y = "") +
+  theme_classic() +
+  theme(axis.line = element_blank()) +
+  NULL
+
+ggsave(filename = paste("results/images/simulations/matrix_template.pdf",sep=""),plot = mat.template,
+       device = cairo_pdf,
+       width = 3,height = 3,dpi = 300)
