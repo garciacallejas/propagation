@@ -93,8 +93,8 @@ pop.plot.means <- ggplot(pop.averages, aes(x = guild, y = scaled.avg.comm)) +
 
 pop.avg.rank.plot <- ggplot(data = pop.averages, aes(x = species.rank, 
                                       y = scaled.avg.comm)) + 
-  geom_point(aes(fill = guild), shape = 21, size = 2) + 
-  scale_fill_OkabeIto() +
+  geom_point(aes(fill = guild), shape = 21, size = 4) + 
+  scale_fill_OkabeIto(order = c(1,3)) +
   theme_bw() +
   # scale_x_discrete(breaks=NULL) +
   geom_label_repel(data = subset(pop.averages, avg.comm > 110000),
@@ -114,8 +114,8 @@ sp.comm$sp.labels <- paste("italic('",gsub("_"," ",sp.comm$species),"')",sep="")
 
 aggr.rank.plot <- ggplot(data = sp.comm, aes(x = species.rank, 
                                      y = scaled.weighted.communicability)) + 
-  geom_point(aes(fill = guild), shape = 21, size = 2) + 
-  scale_fill_OkabeIto() +
+  geom_point(aes(fill = guild), shape = 21, size = 4) + 
+  scale_fill_OkabeIto(order = c(1,3)) +
   theme_bw() +
   scale_x_discrete(breaks=NULL) +
   geom_label_repel(data = subset(sp.comm, scaled.weighted.communicability > 0.187),

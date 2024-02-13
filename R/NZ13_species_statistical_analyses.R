@@ -24,6 +24,7 @@ library(performance)
 library(corrplot)
 library(scales)
 library(broom.mixed)
+library(effects)
 # library(sf)
 
 # -------------------------------------------------------------------------
@@ -300,21 +301,32 @@ plant.pop.data.scaled <- plant.pop.data %>%
          fruit.diam.scaled = scale(FRUIT_DIAMETER_mm),
          max.height.scaled = scale(PLANT_MAX_MEAN_VEGETATIVE_HEIGHT_m))
 
-plant.pop.glm.scaled <- glmmTMB(comm ~ status + 
+# plant.pop.glm.scaled <- glmmTMB(comm ~ status + 
+#                                   avg.local.degree.scaled + 
+#                                   fruit.diam.scaled + 
+#                                   max.height.scaled,
+#                   family = tweedie, data = plant.pop.data.scaled)
+
+plant.pop.glm.scaled <- glmmTMB(comm ~ status*fruit.diam.scaled + 
                                   avg.local.degree.scaled + 
-                                  fruit.diam.scaled + 
                                   max.height.scaled,
-                  family = tweedie, data = plant.pop.data.scaled)
+                                family = tweedie, data = plant.pop.data.scaled)
+
+plant.pop.glm.scaled.simple <- glmmTMB(comm ~ status + fruit.diam.scaled + 
+                                  avg.local.degree.scaled + 
+                                  max.height.scaled,
+                                family = tweedie, data = plant.pop.data.scaled)
 
 # NOTE: this function sometimes fails without apparent reason. It is possible
 # to copy-paste the code from the glmm.hp function and run it line by line
 # - it consistently works in that case, and gives the exact same result, as it should
 # R mysteries that I don't have time to delve into :/
-plant.pop.variable.importance <- glmm.hp::glmm.hp(plant.pop.glm.scaled)
+# plant.pop.variable.importance <- glmm.hp::glmm.hp(plant.pop.glm.scaled.simple)
 
 # summary(plant.pop.glm.scaled)
 # DHARMa::testResiduals(DHARMa::simulateResiduals(plant.pop.glm.scaled))
 # plot(effects::allEffects(plant.pop.glm.scaled))
+# plot(effect(term = "status:fruit.diam.scaled",mod = plant.pop.glm.scaled))
 
 # print(xtable::xtable(as.data.frame(broom::tidy(plant.pop.glm.scaled)),
 #                      floating=FALSE,
@@ -331,12 +343,20 @@ bird.pop.data.scaled <- bird.pop.data %>%
   mutate(body.mass.scaled = scale(body.mass),
          avg.local.degree.scaled = scale(avg.local.degree))
 
-bird.pop.glm.scaled <- glmmTMB(comm ~ status + 
-                                 body.mass.scaled +
-                                 avg.local.degree.scaled, 
-                       family = tweedie(link = "log"), data = bird.pop.data.scaled)
+# bird.pop.glm.scaled <- glmmTMB(comm ~ status + 
+#                                  body.mass.scaled +
+#                                  avg.local.degree.scaled, 
+#                        family = tweedie(link = "log"), data = bird.pop.data.scaled)
 
-bird.pop.variable.importance <- glmm.hp::glmm.hp(bird.pop.glm.scaled)
+bird.pop.glm.scaled <- glmmTMB(comm ~ status*body.mass.scaled +
+                                 avg.local.degree.scaled, 
+                               family = tweedie(link = "log"), data = bird.pop.data.scaled)
+
+bird.pop.glm.scaled.simple <- glmmTMB(comm ~ status + body.mass.scaled +
+                                 avg.local.degree.scaled, 
+                               family = tweedie(link = "log"), data = bird.pop.data.scaled)
+
+bird.pop.variable.importance <- glmm.hp::glmm.hp(bird.pop.glm.scaled.simple)
 
 # summary(bird.pop.glm.scaled)
 # DHARMa::testResiduals(DHARMa::simulateResiduals(bird.pop.glm.scaled))
@@ -359,15 +379,31 @@ plant.data.scaled <- plant.data %>%
          fruit.diam.scaled = scale(FRUIT_DIAMETER_mm),
          max.height.scaled = scale(PLANT_MAX_MEAN_VEGETATIVE_HEIGHT_m))
 
-plant.sp.glm.scaled <- glmmTMB(comm2 ~ status + 
-                                 degree.scaled +
-                                 prevalence.scaled + 
-                                 fruit.diam.scaled + 
-                                 max.height.scaled,
-                      family = tweedie,
-                      data = plant.data.scaled)
+# plant.sp.glm.scaled <- glmmTMB(comm2 ~ status + 
+#                                  degree.scaled +
+#                                  prevalence.scaled + 
+#                                  fruit.diam.scaled + 
+#                                  max.height.scaled,
+#                       family = tweedie,
+#                       data = plant.data.scaled)
 
-plant.sp.variable.importance <- glmm.hp::glmm.hp(plant.sp.glm.scaled, type = "adjR2", commonality = FALSE)
+plant.sp.glm.scaled <- glmmTMB(comm2 ~ status*fruit.diam.scaled + 
+                                 degree.scaled +
+                                 prevalence.scaled +
+                                 max.height.scaled,
+                               family = tweedie,
+                               data = plant.data.scaled)
+
+
+plant.sp.glm.scaled.simple <- glmmTMB(comm2 ~ status + fruit.diam.scaled + 
+                                 degree.scaled +
+                                 prevalence.scaled +
+                                 max.height.scaled,
+                               family = tweedie,
+                               data = plant.data.scaled)
+
+plant.sp.variable.importance <- glmm.hp::glmm.hp(plant.sp.glm.scaled.simple, 
+                                                 type = "adjR2", commonality = FALSE)
 
 # visual inspection
 # ggplot(plant.data.scaled) +
@@ -376,6 +412,7 @@ plant.sp.variable.importance <- glmm.hp::glmm.hp(plant.sp.glm.scaled, type = "ad
 
 # summary(plant.sp.glm.scaled)
 # DHARMa::testResiduals(DHARMa::simulateResiduals(plant.sp.glm.scaled))
+# plot(effect(term = "status:fruit.diam.scaled",mod = plant.sp.glm.scaled))
 
 # print(xtable::xtable(as.data.frame(broom::tidy(plant.sp.glm.scaled)),
 #                      floating=FALSE,
@@ -394,21 +431,35 @@ bird.data.scaled <- bird.data %>%
          body.mass.scaled = scale(body_mass))
 
 # bird.glm <- betareg(comm ~ status + scale(BILL_LENGTH_mm) + scale(body.mass) + scale(HWI),data = bird.data)
-bird.sp.glm.scaled <- glmmTMB(comm2 ~ status + prevalence.scaled +
-                         degree.scaled +
-                       body.mass.scaled,
-                       # scale(BILL_LENGTH_mm),  
-                       # scale(HWI),
-                     family = tweedie(link = "log"), data = bird.data.scaled)
+# bird.sp.glm.scaled <- glmmTMB(comm2 ~ status + prevalence.scaled +
+#                          degree.scaled +
+#                        body.mass.scaled,
+#                        # scale(BILL_LENGTH_mm),  
+#                        # scale(HWI),
+#                      family = tweedie(link = "log"), data = bird.data.scaled)
+
+bird.sp.glm.scaled <- glmmTMB(comm2 ~ status*body.mass.scaled + prevalence.scaled +
+                                degree.scaled,
+                              # scale(BILL_LENGTH_mm),  
+                              # scale(HWI),
+                              family = tweedie(link = "log"), data = bird.data.scaled)
+
+bird.sp.glm.scaled.simple <- glmmTMB(comm2 ~ status + body.mass.scaled + prevalence.scaled +
+                                degree.scaled,
+                              # scale(BILL_LENGTH_mm),  
+                              # scale(HWI),
+                              family = tweedie(link = "log"), data = bird.data.scaled)
+
 # visual inspection
 # ggplot(bird.data.scaled) + 
 #   geom_point(aes(y = prevalence.scaled, x = comm2))
 # plot(effects::allEffects(bird.sp.glm.scaled))
 
-bird.sp.variable.importance <- glmm.hp::glmm.hp(bird.sp.glm.scaled, type = "adjR2", commonality = FALSE)
+bird.sp.variable.importance <- glmm.hp::glmm.hp(bird.sp.glm.scaled.simple, type = "adjR2", commonality = FALSE)
 
 # summary(bird.sp.glm.scaled)
 # DHARMa::testResiduals(DHARMa::simulateResiduals(bird.sp.glm.scaled))
+# plot(effect(term = "status:body.mass.scaled",mod = bird.sp.glm.scaled))
 
 # print(xtable::xtable(as.data.frame(broom::tidy(bird.sp.glm.scaled)),
 #                      floating=FALSE,
