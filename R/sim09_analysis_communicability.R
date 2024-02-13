@@ -1,12 +1,12 @@
 
-# statistical analyses on communicability of simulated landscapes
+# statistical/correlation analyses on communicability of simulated landscapes
 
 # INPUTS
 # - individual communicability dataframes: "results/communicability/.."
 # - categories of the different factors
 
 # OUTPUTS
-# Fig 2, 3
+# Fig S7, S8
 # numerical correlations
 
 # -------------------------------------------------------------------------
@@ -222,39 +222,12 @@ ggsave("results/images/simulations/species_level_communicability_simulations.pdf
        device = cairo_pdf,
        width = 9, height = 4,dpi = 300)
 
-# sp.data.scaled.2$scaled.wc[sp.data.scaled.2$scaled.wc == 0] <- 1e-7
-# sp.data.scaled.2$presences[sp.data.scaled.2$presences == 0] <- 1e-7
-# 
-# t1 <- subset(sp.data.scaled.2,id == sp.data.scaled.2$id[86])
-
 # -------------------------------------------------------------------------
 
-# m.glm <- glm(scaled.wc ~ degree + dispersal.distance + log(presences),
-#              data = t1,family = Gamma(link = "log"))
-# 
-# m.glmm <- glmmTMB(scaled.wc ~ log(presences) + degree + dispersal.distance + (1|id),
-#                   data = sp.data.scaled.2,family = Gamma(link = "log"))
-# 
-# # mrand <- lmer(wc ~ presences + degree + dispersal.distance + (1|id),
-# #               data = sp.data.scaled)
-# 
-# simulationOutput <- DHARMa::simulateResiduals(fittedModel = m.glmm)
-# plot(simulationOutput)
-# DHARMa::testResiduals(m.glmm)
+# communicability-dispersal distance correlations under different landscape categories
+# species.data.landscape.cat <- species.data.df %>% 
+#   group_by(dispersal.category) %>%
+#   summarise(spearman.correlation = cor.test(wc,dispersal.distance,method = "spearman")$estimate)
 
-# sp2 <- subset(sp.data.scaled,degree < 0.6 & presences < 0.75)
 
-# ggplot(t1,aes(y = scaled.wc, x = presences)) +
-#   geom_point() +
-#   geom_smooth() +
-#   NULL
-# 
-# mg <- glm(wc ~ presences,
-#   data = sp2, family = Gamma(link = "log"))
-# 
-# simulationOutput <- DHARMa::simulateResiduals(fittedModel = mg)
-# plot(simulationOutput)
-# DHARMa::plotResiduals(simulationOutput, species.data.df$degree)
-# 
-# DHARMa::testResiduals(mg)
-# summary(mg)
+
