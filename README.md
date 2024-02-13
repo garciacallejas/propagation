@@ -1,2 +1,2 @@
 # propagation
-propagation of disturbances in ecological networks
+propagation of disturbances in spatial ecological networks
