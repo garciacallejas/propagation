@@ -38,13 +38,17 @@ if(observation.source == "observed_records"){
   
 }
 
+sp.traits <- read.csv2("data/trait_data.csv")
+sp.status <- unique(sp.traits[,c("species","guild","status","IUCN_status","NZ_doc_status")])
+
 pop.comm <- read.csv2(paste("results/population_level_communicability_",grid.size,"km.csv",sep=""))
 sp.comm <- read.csv2(paste("results/species_level_communicability_",grid.size,"km.csv",sep=""))
 sp.comm$species <- factor(sp.comm$species, levels = sort(unique(sp.comm$species)))
 sp.comm <- dplyr::arrange(sp.comm,desc(scaled.weighted.communicability)) %>%
-  mutate(species.rank = rank(-scaled.weighted.communicability,ties.method = "first"))
-sp.traits <- read.csv2("data/trait_data.csv")
-sp.status <- unique(sp.traits[,c("species","guild","status")])
+  mutate(species.rank = rank(-scaled.weighted.communicability,ties.method = "first")) %>%
+  left_join(sp.status) %>%
+  mutate(NZ_threatened = ifelse(NZ_doc_status %in% c("at risk","threatened","endangered","relict"),T,F),
+         IUCN_threatened = ifelse(IUCN_status %in% c("CR","EN","LR/cd","LR/nt","NT","VU"),T,F))
 
 cell.land.uses <- read.csv2(paste("data/land_use_frequencies_",grid.size,"km.csv",sep=""))
 cell.comm <- read.csv2(paste("results/cell_level_communicability_",grid.size,"km.csv",sep=""))
@@ -77,7 +81,9 @@ pop.averages <- pop.comm %>%
   ungroup() %>%
   mutate(species.rank = rank(-avg.comm,ties.method = "first"),
          sp.labels = paste("italic('",gsub("_"," ",species),"')",sep=""),
-         scaled.avg.comm = scales::rescale(avg.comm))
+         scaled.avg.comm = scales::rescale(avg.comm),
+         NZ_threatened = ifelse(NZ_doc_status %in% c("at risk","threatened","endangered","relict"),T,F),
+         IUCN_threatened = ifelse(IUCN_status %in% c("CR","EN","LR/cd","LR/nt","NT","VU"),T,F))
 
 pop.plot.means <- ggplot(pop.averages, aes(x = guild, y = scaled.avg.comm)) + 
   geom_half_point(aes(color = status), 
@@ -91,19 +97,24 @@ pop.plot.means <- ggplot(pop.averages, aes(x = guild, y = scaled.avg.comm)) +
   NULL
 # pop.plot.means
 
-pop.avg.rank.plot <- ggplot(data = pop.averages, aes(x = species.rank, 
+pop.avg.rank.plot <- ggplot(data = subset(pop.averages, guild == "birds"), aes(x = species.rank, 
                                       y = scaled.avg.comm)) + 
-  geom_point(aes(fill = guild), shape = 21, size = 4) + 
+  # geom_point(aes(fill = guild), shape = 21, size = 4) +
+  geom_point(aes(fill = NZ_threatened, shape = NZ_threatened, size = NZ_threatened)) +
+  scale_shape_manual(values = c(21,25)) +
+  scale_size_manual(values = c(4,6)) +
   scale_fill_OkabeIto(order = c(1,3)) +
   theme_bw() +
   # scale_x_discrete(breaks=NULL) +
-  geom_label_repel(data = subset(pop.averages, avg.comm > 110000),
+  geom_label_repel(data = subset(pop.averages, NZ_threatened == T),
+  # geom_label_repel(data = subset(pop.averages, avg.comm > 110000),
                    aes(label=sp.labels),
                    nudge_x = 50,
                    alpha = .8,
                    parse = T) +
   xlab("species rank - population level") + ylab("average population communicability") +
   scale_x_discrete(breaks=NULL) +
+  theme(legend.position = "none") +
   NULL
 # pop.avg.rank.plot
 
@@ -112,18 +123,23 @@ pop.avg.rank.plot <- ggplot(data = pop.averages, aes(x = species.rank,
 
 sp.comm$sp.labels <- paste("italic('",gsub("_"," ",sp.comm$species),"')",sep="")
 
-aggr.rank.plot <- ggplot(data = sp.comm, aes(x = species.rank, 
+aggr.rank.plot <- ggplot(data = subset(sp.comm, guild == "birds"), aes(x = species.rank, 
                                      y = scaled.weighted.communicability)) + 
-  geom_point(aes(fill = guild), shape = 21, size = 4) + 
+  # geom_point(aes(fill = guild), shape = 21, size = 4) +
+  geom_point(aes(fill = NZ_threatened, shape = NZ_threatened, size = NZ_threatened)) +
+  scale_shape_manual(values = c(21,25)) +
+  scale_size_manual(values = c(4,6)) +
   scale_fill_OkabeIto(order = c(1,3)) +
   theme_bw() +
   scale_x_discrete(breaks=NULL) +
-  geom_label_repel(data = subset(sp.comm, scaled.weighted.communicability > 0.187),
+  geom_label_repel(data = subset(sp.comm, NZ_threatened == T),
+  # geom_label_repel(data = subset(sp.comm, scaled.weighted.communicability > 0.187),
             aes(label=sp.labels),
             alpha = .8,
             nudge_x = 50,
             parse = T) +
   xlab("species rank - full territory") + ylab("aggregate species communicability") +
+  # theme(legend.position = "none") +
   NULL
 # aggr.rank.plot
 
@@ -242,31 +258,31 @@ cell.land.use.plot
 cell.plots <- cell.comm.plot + cell.land.use.plot
 
 # -------------------------------------------------------------------------
-ggsave("results/images/population_communicability_distribution.png",
-       plot = pop.avg.rank.plot, width = 8, height = 5)
-
-ggsave("results/images/population_communicability_by_guild_status.png",
-       plot = pop.plot.means, width = 8, height = 5)
-
-
-# -------------------------------------------------------------------------
-
-ggsave("results/images/sp_communicability_distribution.png",
-       plot = aggr.rank.plot, width = 8, height = 5)
-
-ggsave("results/images/combined_communicability_distribution.png",
-       plot = combined.rank.plot, width = 13, height = 6)
-
-ggsave("results/images/sp_communicability_density.png",
-       plot = sp.hist, width = 8, height = 5)
-
-# -------------------------------------------------------------------------
-
-ggsave(paste("results/images/cell_communicability_",grid.size,"km.png",sep=""),
-       plot = cell.comm.plot, width = 5, height = 5)
-
-ggsave(paste("results/images/cell_communicability_land_use_",grid.size,"km.png",sep=""),
-       plot = cell.plots, width = 9, height = 6)
+# ggsave("results/images/population_communicability_distribution.png",
+#        plot = pop.avg.rank.plot, width = 8, height = 5)
+# 
+# ggsave("results/images/population_communicability_by_guild_status.png",
+#        plot = pop.plot.means, width = 8, height = 5)
+# 
+# 
+# # -------------------------------------------------------------------------
+# 
+# ggsave("results/images/sp_communicability_distribution.png",
+#        plot = aggr.rank.plot, width = 8, height = 5)
+# 
+# ggsave("results/images/combined_communicability_distribution.png",
+#        plot = combined.rank.plot, width = 13, height = 6)
+# 
+# ggsave("results/images/sp_communicability_density.png",
+#        plot = sp.hist, width = 8, height = 5)
+# 
+# # -------------------------------------------------------------------------
+# 
+# ggsave(paste("results/images/cell_communicability_",grid.size,"km.png",sep=""),
+#        plot = cell.comm.plot, width = 5, height = 5)
+# 
+# ggsave(paste("results/images/cell_communicability_land_use_",grid.size,"km.png",sep=""),
+#        plot = cell.plots, width = 9, height = 6)
 
 # ggsave(paste("results/images/cell_richness_",grid.size,"km.png",sep=""),
 #        plot = richness.plot, width = 8, height = 8)
