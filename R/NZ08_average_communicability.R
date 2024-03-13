@@ -7,7 +7,7 @@
 # the inputs for this script are not uploaded as they involve a large number of files
 # so this will not run as it is. The outputs of this script are already uploaded,
 # so to reproduce the results, I recommend using the uploaded dataframes.
-# To run this script, one needs to generate the raw results from script NZ08,
+# To run this script, one needs to generate the raw results from script NZ07,
 # which is computationally demanding.
 # -------------------------------------------------------------------------
 

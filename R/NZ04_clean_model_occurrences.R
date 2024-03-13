@@ -1,4 +1,11 @@
-# tidy model occurrences from Otso Ovaskainen JSDM 
+# tidy modeled co-occurrences from Otso Ovaskainen JSDM 
+
+# INPUTS
+# raw input from the JSDM
+# - "results/plant_bird_predictions.RData"
+
+# OUTPUTS
+# - "results/model_occurrences_"
 
 library(tidyverse)
 library(sf)

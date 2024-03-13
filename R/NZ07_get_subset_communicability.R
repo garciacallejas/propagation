@@ -15,7 +15,7 @@
 # because it generates a large amount of .csv files. Users can nevertheless
 # run this script to generate them, if the folder structure is already in place.
 # If you want to reproduce the statistical analyses and figures, I recommend
-# to use the summarised results uploaded here (see scripts NZ10-12)
+# to use the summarised results uploaded here (see scripts NZ09-11)
 # -------------------------------------------------------------------------
 
 # INPUTS
@@ -52,10 +52,6 @@ registerDoParallel(cl)
 
 # -------------------------------------------------------------------------
 
-# which source to use?
-observation.source <- "occurrence_prob"
-# observation.source <- "observed_records"
-
 # grid size?
 grid.size <- 10
 
@@ -66,18 +62,12 @@ sp.int.orig <- read.csv2("results/plant_bird_interactions_clean.csv")
 
 hwi <- read.csv2("results/bird_hand_wing_index.csv")
 
-if(observation.source == "observed_records"){
-  sp.cells <- read.csv2(paste("data/sp_observations_long_",grid.size,"km.csv",
-                              sep=""))
-}else if(observation.source == "occurrence_prob"){
-  sp.cells <- read.csv2(paste("results/model_occurrences_",grid.size,"km.csv",
-                              sep=""))
-  # this is to harmonise datasets
-  names(sp.cells)[which(names(sp.cells) == "presence")] <- "observations"
-  # keep presences only
-  sp.cells <- subset(sp.cells, observations == 1)
-  
-}
+sp.cells <- read.csv2(paste("results/model_occurrences_",grid.size,"km.csv",
+                            sep=""))
+# this is to harmonise datasets
+names(sp.cells)[which(names(sp.cells) == "presence")] <- "observations"
+# keep presences only
+sp.cells <- subset(sp.cells, observations == 1)
 
 # careful with this, ensure that the ids are stored as character with a leading zero
 # sp.cells$cell_id <- formatC(sp.cells$cell_id, width = 5, format = "d", flag = "0")
