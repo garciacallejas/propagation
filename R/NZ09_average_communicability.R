@@ -1,11 +1,23 @@
 
 # Script to average communicability values over grid cells and guilds
+# also put together local degrees, that are used later in the statistical analyses
+
+# -------------------------------------------------------------------------
+# IMPORTANT NOTE:
+# the inputs for this script are not uploaded as they involve a large number of files
+# so this will not run as it is. The outputs of this script are already uploaded,
+# so to reproduce the results, I recommend using the uploaded dataframes.
+# To run this script, one needs to generate the raw results from script NZ08,
+# which is computationally demanding.
+# -------------------------------------------------------------------------
 
 # INPUTS: 
 # - pairwise communicability dataframes: "/results/communicability/NZ_networks/*.csv"
+# - local node degrees: "results/sp_degrees/*.csv
 
 # OUTPUTS:
 # - average communicability by species/cell df: "results/*level_communicability.csv"
+# - single dataframe of local degrees: "results/population_level_degrees_".
 
 # -------------------------------------------------------------------------
 
@@ -16,11 +28,16 @@ range01 <- function(x){(x-min(x))/(max(x)-min(x))}
 
 grid.size <- 10
 
-# TODO filter the files read to only those from grid.size km
-# so far it works because I only have 10km files, but CAREFUL!
 pair.comm <- list.files("results/communicability/NZ_networks/",
                         full.names = T) %>% 
   map_dfr(read.csv2)
+
+# put together local degrees in a single dataframe
+all.local.degrees <- list.files("results/sp_degrees/",
+                                full.names = T) %>% 
+  map_dfr(read.csv2)
+
+# -------------------------------------------------------------------------
 
 # test
 all.sp <- unique(pair.comm[,c("sp1","guild.sp1")])
@@ -61,5 +78,5 @@ pair.comm.clean %>% select(species,guild) %>%
 write.csv2(pair.comm.clean,paste("results/population_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 write.csv2(sp.comm,paste("results/species_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
 write.csv2(cell.comm,paste("results/cell_level_communicability_",grid.size,"km.csv",sep=""),row.names = FALSE)
-
+write.csv2(all.local.degrees,paste("results/population_level_degrees_",grid.size,"km.csv",sep=""),row.names = F)
 

@@ -6,7 +6,7 @@ library(stars)
 library(tidyverse)
 
 # this should be already in WGS84
-NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
+NZ <- st_read('data/NZ_main_islands.shp')
 
 # -------------------------------------------------------------------------
 # set cell size in meters

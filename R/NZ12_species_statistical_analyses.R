@@ -4,6 +4,7 @@
 # INPUTS
 # - spatial grid: "data/NZ_grid_"
 # - species occurrences: "results/model_occurrences_"
+# - population-level degrees: "results/population_level_degrees_"
 # - population-level communicability: "results/population_level_communicability_"
 # - species-level communicability: "results/species_level_communicability_"
 # - cell land uses: "data/land_use_frequencies_"
@@ -31,11 +32,12 @@ library(effects)
 grid.size <- 10
 
 sp.int.orig <- read.csv2("results/plant_bird_interactions_clean.csv")
-
+all.local.degrees <- read.csv2(paste("results/population_level_degrees_",grid.size,"km.csv",sep=""))
 pop.comm <- read.csv2(paste("results/population_level_communicability_",grid.size,"km.csv",sep=""))
 sp.comm <- read.csv2(paste("results/species_level_communicability_",grid.size,"km.csv",sep=""))
 sp.traits <- read.csv2("data/trait_data.csv")
 sp.traits.2 <- sp.traits
+
 # fill by hand some body mass values that are not present in the gathered dataset
 # source: https://en.wikipedia.org/wiki/North_Island_saddleback
 sp.traits.2$mean.value[which(sp.traits.2$species == "Philesturnus_rufusater" & 
@@ -107,11 +109,6 @@ table(sp.traits.valid.sp$guild,sp.traits.valid.sp$status)
 # average local degree
 # this is the average of the realised degrees of every species in their local
 # communities
-
-all.local.degrees <- list.files("results/sp_degrees/",
-                                full.names = T) %>% 
-  map_dfr(read.csv2)
-
 avg.local.deg <- all.local.degrees %>%
   group_by(species) %>%
   summarise(avg.local.degree = mean(deg))
@@ -301,12 +298,6 @@ plant.pop.data.scaled <- plant.pop.data %>%
          fruit.diam.scaled = scale(FRUIT_DIAMETER_mm),
          max.height.scaled = scale(PLANT_MAX_MEAN_VEGETATIVE_HEIGHT_m))
 
-# plant.pop.glm.scaled <- glmmTMB(comm ~ status +
-#                                   avg.local.degree.scaled +
-#                                   fruit.diam.scaled +
-#                                   max.height.scaled,
-#                   family = tweedie, data = plant.pop.data.scaled)
-
 plant.pop.glm.scaled <- glmmTMB(comm ~ status*fruit.diam.scaled + 
                                   avg.local.degree.scaled + 
                                   max.height.scaled,
@@ -317,10 +308,6 @@ plant.pop.glm.scaled <- glmmTMB(comm ~ status*fruit.diam.scaled +
 #                                   max.height.scaled,
 #                                 family = Gamma(link="log"), data = plant.pop.data.scaled)
 
-# NOTE: this function sometimes fails without apparent reason. It is possible
-# to copy-paste the code from the glmm.hp function and run it line by line
-# - it consistently works in that case, and gives the exact same result, as it should
-# R mysteries that I don't have time to delve into :/
 # plant.pop.variable.importance <- glmm.hp::glmm.hp(plant.pop.glm.scaled.simple)
 
 # summary(plant.pop.glm.scaled)
@@ -342,11 +329,6 @@ plant.pop.glm.scaled <- glmmTMB(comm ~ status*fruit.diam.scaled +
 bird.pop.data.scaled <- bird.pop.data %>%
   mutate(body.mass.scaled = scale(body.mass),
          avg.local.degree.scaled = scale(avg.local.degree))
-
-# bird.pop.glm.scaled <- glmmTMB(comm ~ status + 
-#                                  body.mass.scaled +
-#                                  avg.local.degree.scaled, 
-#                        family = tweedie(link = "log"), data = bird.pop.data.scaled)
 
 bird.pop.glm.scaled <- glmmTMB(comm ~ status*body.mass.scaled +
                                  avg.local.degree.scaled, 
@@ -381,14 +363,6 @@ plant.data.scaled <- plant.data %>%
 
 # to avoid a single zero, input a very small value, much smaller than the next one
 plant.data.scaled$comm[plant.data.scaled$comm == 0] <- 1e-8
-
-# plant.sp.glm.scaled <- glmmTMB(comm2 ~ status + 
-#                                  degree.scaled +
-#                                  prevalence.scaled + 
-#                                  fruit.diam.scaled + 
-#                                  max.height.scaled,
-#                       family = tweedie,
-#                       data = plant.data.scaled)
 
 plant.sp.glm.scaled <- glmmTMB(comm ~ status*fruit.diam.scaled + 
                                  degree.scaled +
@@ -433,24 +407,12 @@ bird.data.scaled <- bird.data %>%
          prevalence.scaled = scale(prevalence),
          body.mass.scaled = scale(body_mass))
 
-# bird.glm <- betareg(comm ~ status + scale(BILL_LENGTH_mm) + scale(body.mass) + scale(HWI),data = bird.data)
-# bird.sp.glm.scaled <- glmmTMB(comm2 ~ status + prevalence.scaled +
-#                          degree.scaled +
-#                        body.mass.scaled,
-#                        # scale(BILL_LENGTH_mm),  
-#                        # scale(HWI),
-#                      family = tweedie(link = "log"), data = bird.data.scaled)
-
 bird.sp.glm.scaled <- glmmTMB(comm ~ status*body.mass.scaled + prevalence.scaled +
                                 degree.scaled,
-                              # scale(BILL_LENGTH_mm),  
-                              # scale(HWI),
                               family = tweedie(link = "log"), data = bird.data.scaled)
 
 bird.sp.glm.scaled.simple <- glmmTMB(comm ~ status + body.mass.scaled + prevalence.scaled +
                                 degree.scaled,
-                              # scale(BILL_LENGTH_mm),  
-                              # scale(HWI),
                               family = Gamma(link = "log"), data = bird.data.scaled)
 
 # visual inspection

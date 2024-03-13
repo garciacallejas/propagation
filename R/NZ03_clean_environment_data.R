@@ -5,8 +5,11 @@ library(stars)
 library(terra)
 
 # -------------------------------------------------------------------------
+# this data is too big to upload to github. It can be downloaded from
+# https://datastore.landcareresearch.co.nz/dataset/nzenvds/resource/1f3a3a39-2327-4506-bcc4-d1b631d44976
+
 env.path <- "../datasets/NZEnvDS_NZMG/"
-NZ <- st_read('../datasets/spatial_data/NZ_main_islands.shp')
+NZ <- st_read('data/NZ_main_islands.shp')
 
 grid.size <- 10000
 

@@ -6,9 +6,17 @@
 # and a buffer of 30km, and calculate the communicability of populations
 # from that focal cell.
 
-# NOTE: this script is very computationally demanding
+# -------------------------------------------------------------------------
+# IMPORTANTE NOTE 1: this script is VERY computationally demanding
 # in the subfolder "abacus_scripts" there is a version for running in an HPC
 # otherwise it might crash due to RAM requirements, or you might have to wait forever 
+
+# IMPORTANT NOTE 2: the results from this script are not uploaded to github
+# because it generates a large amount of .csv files. Users can nevertheless
+# run this script to generate them, if the folder structure is already in place.
+# If you want to reproduce the statistical analyses and figures, I recommend
+# to use the summarised results uploaded here (see scripts NZ10-12)
+# -------------------------------------------------------------------------
 
 # INPUTS
 # - species observations: "results/model_occurrences_"
@@ -29,8 +37,6 @@ source("R/auxiliary_functions/communicability_network.R")
 source("R/auxiliary_functions/communicability.R")
 
 # -------------------------------------------------------------------------
-# this will likely be a standalone script soon
-
 # dispersal rate based on distance and hand-wing index of the species
 disp.fun <- function(dist,hwi){
   my.kern <- exp(-dist*(1/hwi))
@@ -58,7 +64,6 @@ max.dist <- 3*grid.size
 
 sp.int.orig <- read.csv2("results/plant_bird_interactions_clean.csv")
 
-# what to assign to birds without HWI measure? 
 hwi <- read.csv2("results/bird_hand_wing_index.csv")
 
 if(observation.source == "observed_records"){
@@ -332,32 +337,32 @@ null.list <- foreach(i.cell = 1:length(cell.id),
                                                            return.pairwise.comm = T)
                        bin.comm <- sub.comm[[3]]
                        w.comm <- sub.comm[[4]]
-                       
+
                        # tidy functions only work with dataframes, but this still works, and is fast
-                       # dfb <- reshape2::melt(bin.comm,value.name = "binary.communicability")
-                       # dfw <- reshape2::melt(w.comm,value.name = "weighted.communicability")
+                       dfb <- reshape2::melt(bin.comm,value.name = "binary.communicability")
+                       dfw <- reshape2::melt(w.comm,value.name = "weighted.communicability")
                        dfb <- as.data.frame(bin.comm) %>%
                          mutate(Var1 = rownames(.)) %>%
                          pivot_longer(cols = c(-Var1),names_to = "Var2",values_to = "binary.communicability")
                        dfw <- as.data.frame(w.comm) %>%
                          mutate(Var1 = rownames(.)) %>%
                          pivot_longer(cols = c(-Var1),names_to = "Var2",values_to = "weighted.communicability")
-                       
+
                        df1 <- left_join(dfb,dfw)
-                       
+
                        df1$sp1 <- sub("\\-.*", "", df1$Var1)
                        df1$cell.id.sp1 <- sub(".*-", "", df1$Var1)
                        df1$sp2 <- sub("\\-.*", "", df1$Var2)
                        df1$cell.id.sp2 <- sub(".*-", "", df1$Var2)
-                       
+
                        df1$scaled.binary.communicability <- scales::rescale(df1$binary.communicability)
                        df1$scaled.weighted.communicability <- scales::rescale(df1$weighted.communicability)
-                       
+
                        df1$diag <- ifelse(df1$sp1 == df1$sp2 & df1$cell.id.sp1 == df1$cell.id.sp2,TRUE,FALSE)
-                       
+
                        df1$guild.sp1 <- ifelse(df1$sp1 %in% bird.sp, "birds", "plants")
                        df1$guild.sp2 <- ifelse(df1$sp2 %in% bird.sp, "birds", "plants")
-                       
+
                        df1 <- df1[,c("sp1","guild.sp1","cell.id.sp1",
                                      "sp2","guild.sp2","cell.id.sp2",
                                      "diag",
@@ -365,23 +370,23 @@ null.list <- foreach(i.cell = 1:length(cell.id),
                                      "scaled.binary.communicability",
                                      "weighted.communicability",
                                      "scaled.weighted.communicability")]
-                       
-                       # I am only interested in the values for the focal cell -
-                       # other cells are only partially represented, because they may be in the
-                       # border of this "sub-landscape".
+
+                       # # I am only interested in the values for the focal cell -
+                       # # other cells are only partially represented, because they may be in the
+                       # # border of this "sub-landscape".
                        cell.df <- df1 %>%
                          filter(cell.id.sp1 == cell.id[i.cell]) %>%
                          filter(diag == FALSE) %>%
                          group_by(sp1,guild.sp1,cell.id.sp1) %>%
                          summarise(population.bin.communicability = sum(binary.communicability),
                                    population.weighted.communicability = sum(weighted.communicability))
-                       
+
                        # -------------------------------------------------------------------------
                        if(nrow(my.local.deg)>0){
                          write.csv2(my.local.deg,paste("results/sp_degrees/degrees_cell_",i.cell,"_",grid.size,"km.csv",sep=""),row.names = F)
                        }
                        
-                       write.csv2(cell.df,paste("results/communicability/NZ_networks/focal_",i.cell,"_",grid.size,"km.csv",sep=""))
+                       # write.csv2(cell.df,paste("results/communicability/NZ_networks/focal_",i.cell,"_",grid.size,"km.csv",sep=""))
                        
                        # -------------------------------------------------------------------------
                        # there are two options: either writing the output of each iteration
@@ -393,18 +398,5 @@ null.list <- foreach(i.cell = 1:length(cell.id),
                      }# for i.cell
 
 stopCluster(cl)
-
-
-# population.communicability.df <- bind_rows(population.communicability.list)
-# 
-# # -------------------------------------------------------------------------
-# 
-# write.csv2(population.communicability.df,
-#            paste("results/population_communicability_",grid.size,"km.csv",sep=""),
-#            row.names = F)
-
-
-
-
 
 
