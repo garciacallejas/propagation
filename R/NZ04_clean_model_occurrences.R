@@ -39,5 +39,26 @@ presence.df$cell_id <- as.numeric(presence.df$cell_id)
 
 write.csv2(presence.df,paste("results/model_occurrences_",grid.size,"km.csv",sep=""),row.names = F)
 
+# -------------------------------------------------------------------------
+# more info: how many species per cell?
 
+sp.per.cell <- presence.df %>% 
+  filter(presence == 1) %>% 
+  group_by(cell_id) %>%
+  summarise(richness = n()) 
 
+avg.values <- sp.per.cell %>% summarise(average.richness = mean(richness),
+                                        median.richness = median(richness),
+                                        sd.richness = sd(richness))
+
+richness.plot <- ggplot(sp.per.cell) + 
+  geom_histogram(aes(x = richness)) + 
+  geom_vline(xintercept = avg.values$average.richness, linetype = "dashed", color = "darkred") +
+  geom_vline(xintercept = avg.values$median.richness, linetype = "dashed", color = "darkorange") +
+  theme_bw() +
+  xlab("species richness in 10km grid cell") +
+  ylab("number of grid cells") +
+  NULL
+
+ggsave("results/images/richness_per_cell.png",
+       plot = richness.plot, width = 5, height = 5)
