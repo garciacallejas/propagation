@@ -1,6 +1,8 @@
 # propagation
 propagation of disturbances in spatial ecological networks
 
+[![DOI](https://zenodo.org/badge/436302162.svg)](https://zenodo.org/doi/10.5281/zenodo.10812903)
+
 Note: the full results of the manuscript can be reproduced by running scripts 
 - NZ09_figures
 - NZ10_species_statistical_analyses
