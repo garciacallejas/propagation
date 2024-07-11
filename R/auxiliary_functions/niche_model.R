@@ -30,7 +30,7 @@ niche_model <- function(S, C){
       }
     }
     
-    cond <- igraph::is.connected(igraph::graph.adjacency(a))
+    cond <- igraph::is_connected(igraph::graph_from_adjacency_matrix(a))
   }
   
   return(a)

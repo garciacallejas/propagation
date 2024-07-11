@@ -113,12 +113,12 @@ adjacency.matrix <- matrix(0,length(all.sp),length(all.sp),
                            dimnames = list(all.sp,all.sp))
 diag(adjacency.matrix) <- 1
 
-# a dataframe with observations of species (plant here, birds below) per cell
 for(i.obs in 1:nrow(sp.int)){
   adjacency.matrix[sp.int$PLANTSPECIES[i.obs],sp.int$BIRDSPECIES[i.obs]] <- 1
   adjacency.matrix[sp.int$BIRDSPECIES[i.obs],sp.int$PLANTSPECIES[i.obs]] <- 1
 }# for i.obs
 
+# a dataframe with observations of species (plant here, birds below) per cell
 plant.sp.cells <- subset(sp.cells,species %in% plant.sp)
 plant.sp.cells.wide <- pivot_wider(plant.sp.cells,
                                    names_from = cell_id,

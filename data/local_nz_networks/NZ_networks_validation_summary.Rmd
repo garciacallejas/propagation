@@ -1,0 +1,50 @@
+---
+title: ''
+output: pdf_document
+---
+
+### NZ Local networks - empirical and modelled
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+
+```{r}
+load("local_networks_empirical_modelled_NZ.Rdata")
+empirical_links <- read.csv2("empirical_networks_link_list.csv")
+modelled_links <- read.csv2("modelled_networks_link.list.csv")
+```
+
+The file "local_networks_empirical_modelled_NZ.Rdata" contains observed and modelled interactions of 16 plant-frugivory networks in Aotearoa New Zealand (the metadata of the local networks is in file "NZ_networks_metadata.csv"). The empirical networks are coded in the final table as binary, bipartite networks. The list of plant species in the 16 empirical networks is:
+
+```{r}
+sort(unique(empirical_links$plant.sp))
+```
+
+The list of bird species in the 16 empirical networks is:
+
+```{r}
+sort(unique(empirical_links$bird.sp))
+```
+
+I gathered the modelled networks from the grid cells where the empirical networks were sampled. The modelled bird and plant species come from the JSDM, with their associated probability of occurrence. The final table includes all pairs of species, along the occurrence of their interaction in the observed and modelled networks. For each pair of species, I include 
+
+* whether they interact in the metaweb we used to model interactions (`metaweb_interaction`). An NA means that at least one of the two species is not present in the set of modelled species. This is, in all cases, because of plant species sampled in the empirical networks but not present in the metaweb.
+
+* for each local network (`NZXX` in the column names):
+    - the expected probability of occurrence for the bird and the plant species (`NZXX_bird.sp.prob`, `NZXX_plant.sp.prob`) in the grid cell associated to that empirical network. 
+    - whether the two sp interact in the observed network (`NZXX_empirical_interaction`). An NA means that at least one modelled species was not sampled in that empirical network.
+
+The columns of the final table are, then:
+
+```{r}
+colnames(full_interaction_df)
+```
+
+
+
+
+
+
+

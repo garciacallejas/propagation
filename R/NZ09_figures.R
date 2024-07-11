@@ -253,7 +253,7 @@ cell.land.use.plot <- ggplot(data = grid.land.use.data) +
   theme_bw() +
   theme(legend.justification=c(1,0), legend.position=c(.99,0.01)) +
   NULL
-cell.land.use.plot
+# cell.land.use.plot
 
 cell.plots <- cell.comm.plot + cell.land.use.plot
 

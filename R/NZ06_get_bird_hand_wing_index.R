@@ -17,7 +17,7 @@ library(tidyverse)
 # -------------------------------------------------------------------------
 
 trait.data <- read.csv2("data/trait_data.csv")
-avonet.data.nz <- read.csv("/home/david/Work/datasets/NZ/bird traits/AVONET/AVONET1_BirdLife.csv")
+avonet.data.nz <- read.csv("data/AVONET/AVONET1_BirdLife.csv")
 
 grid.size <- 10
 
@@ -70,20 +70,28 @@ write.csv2(hwi.full,"results/bird_hand_wing_index.csv",row.names = F)
 # test distances
 
 # 300 is large enough to assume that further distances are zero
-# dist <- seq(0,300,by = grid.size)
-# 
-# kern.fun <- function(dist,hwi){
-#   my.kern <- exp(-dist*(1/hwi))
-# }
-# 
-# kern.df <- expand.grid(dist = dist, hwi = hwi$hand.wing.index)
-# kern.df$disp.rate <- kern.fun(kern.df$dist,kern.df$hwi)
-# kern.df$species <- hwi$species[match(kern.df$hwi,hwi$hand.wing.index)]
+dist <- seq(0,200,by = grid.size)
+
+kern.fun <- function(dist,hwi){
+  my.kern <- exp(-dist*(1/hwi))
+}
+
+kern.df <- expand.grid(dist = dist, hwi = hwi$hand.wing.index)
+kern.df$disp.rate <- kern.fun(kern.df$dist,kern.df$hwi)
+kern.df$species <- hwi$species[match(kern.df$hwi,hwi$hand.wing.index)]
 
 # write.csv2(kern.df, paste("results/species_dispersal_rates_",grid.size,"km.csv",sep=""),row.names = F)
 
-# ggplot(kern.df,aes(x = dist, y = disp.rate, group = species)) +
-#   geom_line(aes(color = species)) +
-#   NULL
+disp.kern.plot <- ggplot(kern.df,aes(x = dist, y = disp.rate, group = species)) +
+  # geom_line(aes(color = species)) +
+  geom_line(color = "grey60") + 
+  theme_classic() +
+  labs(y = "dispersal rate",x = "distance (km)") +
+  # theme(legend.position = "none") +
+  NULL
 
+ggsave(paste("results/images/tests_figure_1/dispersal_kernels.pdf",sep=""),
+       plot = disp.kern.plot,
+       device = cairo_pdf,
+       width = 6, height = 4,dpi = 300)
 
