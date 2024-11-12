@@ -376,7 +376,7 @@ null.list <- foreach(i.cell = 1:length(cell.id),
                          write.csv2(my.local.deg,paste("results/sp_degrees/degrees_cell_",i.cell,"_",grid.size,"km.csv",sep=""),row.names = F)
                        }
                        
-                       # write.csv2(cell.df,paste("results/communicability/NZ_networks/focal_",i.cell,"_",grid.size,"km.csv",sep=""))
+                       write.csv2(cell.df,paste("results/communicability/NZ_networks/focal_",i.cell,"_",grid.size,"km.csv",sep=""))
                        
                        # -------------------------------------------------------------------------
                        # there are two options: either writing the output of each iteration

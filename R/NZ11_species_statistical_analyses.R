@@ -453,5 +453,198 @@ bird.sp.glm.scaled.simple <- glmmTMB(comm ~ status + body.mass.scaled + prevalen
 #                      booktabs=FALSE))
 
 # -------------------------------------------------------------------------
+# plot effects, in particular the interaction bodymass*status/fruitdiameter*status
 
+# plant population-level communicability
+plant.pop.status.pred <- as.data.frame(ggeffects::predict_response(plant.pop.glm.scaled,terms = c("status")))
+plant.pop.status.pred$x <- factor(plant.pop.status.pred$x, levels = c("Native","Exotic"))
 
+plant.pop.diam.pred <- as.data.frame(ggeffects::predict_response(plant.pop.glm.scaled,
+                                                                terms = c("fruit.diam.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]")))
+plant.pop.pred <- as.data.frame(ggeffects::predict_response(plant.pop.glm.scaled, 
+                                                            c("fruit.diam.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]","status")))
+plant.pop.pred$group <- factor(plant.pop.pred$group, levels = c("Native","Exotic"))
+
+# plant species-level communicability
+plant.sp.status.pred <- as.data.frame(ggeffects::predict_response(plant.sp.glm.scaled,terms = c("status")))
+plant.sp.status.pred$x <- factor(plant.sp.status.pred$x, levels = c("Native","Exotic"))
+
+plant.sp.diam.pred <- as.data.frame(ggeffects::predict_response(plant.sp.glm.scaled,
+                                                                terms = c("fruit.diam.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]")))
+plant.sp.pred <- as.data.frame(ggeffects::predict_response(plant.sp.glm.scaled,terms = c("fruit.diam.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]","status")))
+plant.sp.pred$group <- factor(plant.sp.pred$group, levels = c("Native","Exotic"))
+
+# bird population-level communicability
+bird.pop.status.pred <- as.data.frame(ggeffects::predict_response(bird.pop.glm.scaled,terms = c("status")))
+bird.pop.status.pred$x <- factor(bird.pop.status.pred$x, levels = c("Native","Exotic"))
+
+bird.pop.size.pred <- as.data.frame(ggeffects::predict_response(bird.pop.glm.scaled,
+                                                                 terms = c("body.mass.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]")))
+
+bird.pop.pred <- as.data.frame(ggeffects::predict_response(bird.pop.glm.scaled, c("body.mass.scaled [0.1,0.3,0.5,0.7,0.9]","status")))
+bird.pop.pred$group <- factor(bird.pop.pred$group, levels = c("Native","Exotic"))
+
+# bird species-level communicability
+bird.sp.status.pred <- as.data.frame(ggeffects::predict_response(bird.sp.glm.scaled,terms = c("status")))
+bird.sp.status.pred$x <- factor(bird.sp.status.pred$x, levels = c("Native","Exotic"))
+
+bird.sp.size.pred <- as.data.frame(ggeffects::predict_response(bird.sp.glm.scaled,
+                                                                terms = c("body.mass.scaled [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.99]")))
+
+bird.sp.pred <- as.data.frame(ggeffects::predict_response(bird.sp.glm.scaled, c("body.mass.scaled [0.1,0.3,0.5,0.7,0.9]","status")))
+bird.sp.pred$group <- factor(bird.sp.pred$group, levels = c("Native","Exotic"))
+# -------------------------------------------------------------------------
+# plots
+
+# plant population-level
+
+plant.pop.status.plot <- ggplot(plant.pop.status.pred,aes(y = predicted, x = x)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, color = x)) +
+  geom_point(aes(color = x)) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("") +
+  ylab("population-level communicability") +
+  theme(legend.position="none") +
+  NULL
+# plant.pop.status.plot
+
+plant.pop.diam.plot <- ggplot(plant.pop.diam.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .2) +
+  geom_line() +
+  # scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("fruit diameter (scaled)") +
+  ylab("population-level communicability") +
+  NULL
+# plant.pop.diam.plot
+
+plant.pop.plot <- ggplot(plant.pop.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = .2) +
+  geom_line(aes(color = group), linewidth = 1.3) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  scale_fill_OkabeIto(guide = "none") +
+  theme_bw() +
+  xlab("fruit diameter (scaled)") + 
+  ylab("population-level communicability") +
+  NULL
+# plant.pop.plot
+
+# -------------------------------------------------------------------------
+# plant species-level
+
+plant.sp.status.plot <- ggplot(plant.sp.status.pred,aes(y = predicted, x = x)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, color = x)) +
+  geom_point(aes(color = x)) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("") +
+  ylab("species-level communicability") +
+  theme(legend.position="none") +
+  NULL
+# plant.sp.status.plot
+
+plant.sp.diam.plot <- ggplot(plant.sp.diam.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .2) +
+  geom_line() +
+  # scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("fruit diameter (scaled)") +
+  ylab("species-level communicability") +
+  NULL
+# plant.sp.diam.plot
+
+plant.sp.plot <- ggplot(plant.sp.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = .2) +
+  geom_line(aes(color = group), linewidth = 1.3) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  scale_fill_OkabeIto(guide = "none") +
+  theme_bw() +
+  xlab("fruit diameter (scaled)") + 
+  ylab("species-level communicability") +
+  NULL
+# plant.sp.plot
+
+# -------------------------------------------------------------------------
+# bird population-level
+
+bird.pop.status.plot <- ggplot(bird.pop.status.pred,aes(y = predicted, x = x)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, color = x)) +
+  geom_point(aes(color = x)) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("") +
+  ylab("population-level communicability") +
+  theme(legend.position="none") +
+  NULL
+# bird.pop.status.plot
+
+bird.pop.size.plot <- ggplot(bird.pop.size.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .2) +
+  geom_line() +
+  # scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("body mass (scaled)") +
+  ylab("population-level communicability") +
+  NULL
+# bird.pop.size.plot
+
+bird.pop.plot <- ggplot(bird.pop.pred,aes(y = predicted, x = x)) + 
+  # geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = .2) +
+  geom_line(aes(color = group), linewidth = 1.3) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  scale_fill_OkabeIto(guide = "none") +
+  theme_bw() +
+  xlab("body mass (scaled)") + 
+  ylab("population-level communicability") +
+  # ylim(c(0,0.3)) +
+  NULL
+# bird.pop.plot
+
+# -------------------------------------------------------------------------
+# bird species-level
+
+bird.sp.status.plot <- ggplot(bird.sp.status.pred,aes(y = predicted, x = x)) + 
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high, color = x)) +
+  geom_point(aes(color = x)) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("") +
+  ylab("species-level communicability") +
+  theme(legend.position="none") +
+  NULL
+# bird.sp.status.plot
+
+bird.sp.size.plot <- ggplot(bird.sp.size.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .2) +
+  geom_line() +
+  # scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  theme_bw() +
+  xlab("body mass (scaled)") +
+  ylab("species-level communicability") +
+  NULL
+# bird.sp.size.plot
+
+bird.sp.plot <- ggplot(bird.sp.pred,aes(y = predicted, x = x)) + 
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high, fill = group), alpha = .2) +
+  geom_line(aes(color = group), linewidth = 1.3) +
+  scale_color_OkabeIto(name = "")+#,order = c(2,3,1,4,5))+#c(2:8,1)) +
+  scale_fill_OkabeIto(guide = "none") +
+  theme_bw() +
+  xlab("body mass (scaled)") + 
+  ylab("species-level communicability") +
+  NULL
+# bird.sp.plot
+
+# -------------------------------------------------------------------------
+ggsave("results/images/pop_plant_interaction_effects.png",
+       plot = plant.pop.plot, width = 7, height = 4)
+
+ggsave("results/images/sp_plant_interaction_effects.png",
+       plot = plant.sp.plot, width = 7, height = 4)
+
+ggsave("results/images/pop_bird_interaction_effects.png",
+       plot = bird.pop.plot, width = 7, height = 4)
+
+ggsave("results/images/sp_bird_interaction_effects.png",
+       plot = bird.sp.plot, width = 7, height = 4)

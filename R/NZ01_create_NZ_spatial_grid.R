@@ -44,9 +44,9 @@ grid.coords <- data.frame(cell_id = grid_with_labels$cell_id,
 #   geom_sf(data = NZ2, fill = 'white', lwd = 0.05) +
 #   # geom_sf(data = pts, color = 'red', size = 1.7) +
 #   geom_sf(data = grid, fill = 'transparent', lwd = 0.3) +
-#   geom_text(data = grid_with_labels,
-#             aes(x = X, y = Y, label = cell_id),
-#             size = 2) +
+#   # geom_text(data = grid_with_labels,
+#   #           aes(x = X, y = Y, label = cell_id),
+#   #           size = 2) +
 #   coord_sf(datum = NA)  +
 #   labs(x = "") +
 #   labs(y = "")
